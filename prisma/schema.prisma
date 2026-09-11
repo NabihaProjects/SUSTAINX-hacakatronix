@@ -1,0 +1,645 @@
+// Prisma Schema for SOIL IQ - Precision Agriculture Platform
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER, TENANCY & RBAC
+// ==========================================
+
+model User {
+  id            String               @id @default(cuid())
+  email         String               @unique
+  passwordHash  String
+  name          String
+  avatarUrl     String?
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  memberships   OrganizationMember[]
+  auditLogs     AuditLog[]
+  applications  FertilizerApplication[]
+  approvedPrescriptions Prescription[] @relation("ApprovedBy")
+}
+
+model Organization {
+  id            String               @id @default(cuid())
+  name          String
+  slug          String               @unique
+  plan          String               @default("ENTERPRISE")
+  timezone      String               @default("UTC")
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  members       OrganizationMember[]
+  farms         Farm[]
+  fields        Field[]
+  sprayers      Sprayer[]
+  fertilizers   Fertilizer[]
+  crops         Crop[]
+  prescriptions Prescription[]
+  auditLogs     AuditLog[]
+  activities    FarmActivity[]
+}
+
+model OrganizationMember {
+  id             String       @id @default(cuid())
+  organizationId String
+  userId         String
+  role           String       @default("VIEWER") // OWNER, ADMIN, FARM_MANAGER, OPERATOR, VIEWER
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([organizationId])
+  @@index([userId])
+}
+
+// ==========================================
+// FARM & SPATIAL HIERARCHY
+// ==========================================
+
+model Farm {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  name               String
+  description        String?
+  declaredArea       Float        // User entered declared area
+  calculatedArea     Float?       // Derived from geometries
+  areaUnit           String       @default("acre") // acre, hectare
+  latitude           Float
+  longitude          Float
+  locationLabel      String?
+  status             String       @default("ACTIVE") // ACTIVE, RESTING, ARCHIVED
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fields             Field[]
+  applications       FertilizerApplication[]
+  activities         FarmActivity[]
+
+  @@index([organizationId])
+}
+
+model Field {
+  id                 String       @id @default(cuid())
+  organizationId     String
+  farmId             String
+  name               String
+  boundaryGeoJson    String       // GeoJSON Feature / Polygon string
+  declaredArea       Float
+  calculatedArea     Float        // In canonical hectares
+  areaUnit           String       @default("acre") // Display unit preference
+  cropId             String?
+  cropVariety        String?
+  plantingDate       DateTime?
+  growthStage        String?      // Structured stage name
+  irrigationMethod   String       @default("DRIP") // DRIP, SPRINKLER, FLOOD, RAINFED
+  soilType           String       @default("LOAM") // SANDY, LOAM, CLAY, SILT_LOAM
+  status             String       @default("ACTIVE") // ACTIVE, RESTING, HARVESTED, ARCHIVED
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  organization       Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  farm               Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  crop               Crop?        @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  grids              Grid[]
+  applications       FertilizerApplication[]
+  prescriptions      Prescription[]
+
+  @@index([organizationId])
+  @@index([farmId])
+  @@index([cropId])
+}
+
+model Grid {
+  id                 String               @id @default(cuid())
+  organizationId     String
+  fieldId            String
+  gridCode           String               // e.g. "F01-G001"
+  rowIndex           Int                  @default(0)
+  colIndex           Int                  @default(0)
+  geometryGeoJson    String               // GeoJSON Polygon coordinates string
+  calculatedArea     Float                // Canonical Hectares
+  status             String               @default("OPTIMAL") // OPTIMAL, CAUTION, EXCESS_RISK, BLOCKED, UNKNOWN
+  isActive           Boolean              @default(true)
+  isBlocked          Boolean              @default(false)
+  blockReason        String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  field              Field                @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  nutrientBudget     GridNutrientBudget?
+  soilProfiles       SoilProfile[]
+  applications       FertilizerApplication[]
+  prescriptions      Prescription[]
+  controlDecisions   ControlDecision[]
+
+  @@unique([fieldId, gridCode])
+  @@index([fieldId])
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ==========================================
+// CROPS, STAGES & AGRONOMIC REQUIREMENTS
+// ==========================================
+
+model Crop {
+  id                 String            @id @default(cuid())
+  organizationId     String?           // Null for global catalog, or org-specific
+  name               String            // Rice, Tomato, Maize, etc.
+  scientificName     String?
+  category           String            // CEREAL, VEGETABLE, CASH_CROP, LEGUME
+  description        String?
+  targetYieldTonsHa  Float             @default(5.0)
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  fields             Field[]
+  growthStages       CropGrowthStage[]
+  agronomicRules     AgronomicRule[]
+
+  @@index([organizationId])
+}
+
+model CropGrowthStage {
+  id                 String            @id @default(cuid())
+  cropId             String
+  stageName          String            // e.g. "Vegetative", "Flowering"
+  stageOrder         Int
+  durationDays       Int               @default(20)
+  description        String?
+  
+  // Prototype baseline requirement ratios (0.0 - 1.0) of full cycle
+  nDemandRatio       Float             @default(0.2)
+  pDemandRatio       Float             @default(0.2)
+  kDemandRatio       Float             @default(0.2)
+
+  crop               Crop              @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  prescriptions      Prescription[]
+
+  @@unique([cropId, stageName])
+  @@index([cropId])
+}
+
+model AgronomicRule {
+  id                 String            @id @default(cuid())
+  cropId             String
+  ruleCode           String            // e.g. "RICE_N_FLOWERING"
+  ruleVersion        String            @default("v1.0-prototype")
+  source             String            @default("PROTOTYPE")
+  baseReqNPerHa      Float             // kg N / ha
+  baseReqPPerHa      Float             // kg P2O5 / ha -> normalized to pure P
+  baseReqKPerHa      Float             // kg K2O / ha -> normalized to pure K
+  cautionThresholdPct Float            @default(80.0)
+  excessThresholdPct  Float            @default(100.0)
+  notes              String?
+
+  crop               Crop              @relation(fields: [cropId], references: [id], onDelete: Cascade)
+
+  @@index([cropId])
+}
+
+// ==========================================
+// SOIL PROFILE & MEASUREMENTS
+// ==========================================
+
+model SoilProfile {
+  id                 String            @id @default(cuid())
+  gridId             String
+  sampleDate         DateTime          @default(now())
+  depthCm            Int               @default(15)
+  source             String            @default("SOIL_TEST") // SOIL_TEST, SENSOR, ESTIMATED
+  confidence         Float             @default(0.85) // 0.0 - 1.0
+
+  // Soil chemical metrics
+  ph                 Float             @default(6.5)
+  organicCarbonPct   Float             @default(1.2) // Organic Carbon %
+  moisturePct        Float             @default(22.0)
+  ecDsm              Float             @default(0.8) // Electrical Conductivity dS/m
+  
+  // Available nutrients (ppm)
+  availableNPpm      Float             @default(45.0)
+  availablePPpm      Float             @default(25.0)
+  availableKPpm      Float             @default(140.0)
+
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  grid               Grid              @relation(fields: [gridId], references: [id], onDelete: Cascade)
+
+  @@index([gridId])
+  @@index([sampleDate])
+}
+
+// ==========================================
+// FERTILIZERS & APPLICATIONS
+// ==========================================
+
+model Fertilizer {
+  id                 String            @id @default(cuid())
+  organizationId     String?           // Null for global catalog
+  name               String            // Urea, DAP, MOP, NPK 19-19-19
+  formulation        String            // "46-0-0", "19-19-19", "18-46-0"
+  description        String?
+  physicalForm       String            @default("GRANULAR") // GRANULAR, LIQUID, POWDER
+  
+  // Elemental Nutrient percentages (0 - 100)
+  nPercent           Float
+  pPercent           Float
+  kPercent           Float
+
+  densityKgPerL      Float             @default(1.0) // For liquid volume-to-mass conversion
+  defaultUnit        String            @default("kg")
+  isActive           Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization?     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  applications       FertilizerApplication[]
+  prescriptionItems  PrescriptionItem[]
+  sprayers           Sprayer[]
+  applicationEvents  FertilizerApplicationEvent[]
+
+  @@index([organizationId])
+}
+
+model FertilizerApplication {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String
+  fieldId            String
+  gridId             String
+  fertilizerId       String
+  appliedByUserId    String?
+  sprayerId          String?
+
+  applicationDate    DateTime          @default(now())
+  applicationMethod  String            @default("SPRAY") // SPRAY, BROADCAST, FERTIGATION, SIDE_DRESS, OTHER
+  
+  // Quantity
+  quantity           Float             // e.g. 10 kg
+  unit               String            @default("kg")
+  quantityKg         Float             // Normalized to kg
+
+  // Calculated elemental nutrient contributions
+  contributedN       Float             // pure kg N
+  contributedP       Float             // pure kg P
+  contributedK       Float             // pure kg K
+
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  farm               Farm              @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  field              Field             @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  grid               Grid              @relation(fields: [gridId], references: [id], onDelete: Cascade)
+  fertilizer         Fertilizer        @relation(fields: [fertilizerId], references: [id], onDelete: Cascade)
+  appliedBy          User?             @relation(fields: [appliedByUserId], references: [id], onDelete: SetNull)
+  sprayer            Sprayer?          @relation(fields: [sprayerId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([farmId])
+  @@index([fieldId])
+  @@index([gridId])
+  @@index([applicationDate])
+}
+
+// ==========================================
+// NUTRIENT LEDGER (PER-GRID BUDGET)
+// ==========================================
+
+model GridNutrientBudget {
+  id                 String            @id @default(cuid())
+  gridId             String            @unique
+
+  // Target / Recommended Budget (kg / ha)
+  recommendedN       Float             @default(100.0)
+  recommendedP       Float             @default(50.0)
+  recommendedK       Float             @default(80.0)
+
+  // Recommended Application Range
+  minRecommendedRate Float             @default(35.0) // kg fertilizer / ha
+  targetRecommendedRate Float          @default(42.0)
+  maxRecommendedRate Float             @default(50.0)
+
+  // Consumed (Sum of all applications normalized to kg/ha)
+  consumedN          Float             @default(0.0)
+  consumedP          Float             @default(0.0)
+  consumedK          Float             @default(0.0)
+
+  // Remaining (recommended - consumed, minimum 0)
+  remainingN         Float             @default(100.0)
+  remainingP         Float             @default(50.0)
+  remainingK         Float             @default(80.0)
+
+  // Excess (tracks overages if consumed > recommended)
+  excessN            Float             @default(0.0)
+  excessP            Float             @default(0.0)
+  excessK            Float             @default(0.0)
+
+  lastCalculatedAt   DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  grid               Grid              @relation(fields: [gridId], references: [id], onDelete: Cascade)
+
+  @@index([gridId])
+}
+
+// ==========================================
+// PRESCRIPTIONS & CALCULATION ENGINE
+// ==========================================
+
+model Prescription {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  fieldId            String
+  gridId             String
+  growthStageId      String?
+  approvedByUserId   String?
+
+  code               String            // e.g. "RX-2026-F01-G001-V1"
+  versionNumber      Int               @default(1)
+  status             String            @default("READY") // DRAFT, READY, APPROVED, ACTIVE, COMPLETED, SUPERSEDED, BLOCKED
+  confidenceLevel    String            @default("HIGH") // LOW, MEDIUM, HIGH
+  confidenceScore    Float             @default(0.85)   // 0.0 - 1.0
+
+  isSimulation       Boolean           @default(false)
+  engineVersion      String            @default("v1.0-prototype")
+  
+  // Estimated Requirements (kg/ha)
+  estimatedReqN      Float
+  estimatedReqP      Float
+  estimatedReqK      Float
+
+  // Recommended Target & Range (kg product / ha)
+  targetRateKgHa     Float
+  minRateKgHa        Float
+  maxRateKgHa        Float
+
+  // Human-readable explanation and reasons (JSON serialized array)
+  explanationText    String
+  reasonsJson        String            // Array of strings
+  calculationTraceJson String          // Full audit trace of every step
+
+  // Environmental modifier evaluation
+  environmentalRisk  String            @default("LOW") // LOW, MEDIUM, HIGH
+  environmentalAction String           @default("PROCEED") // PROCEED, CAUTION, DEFER, BLOCK
+  environmentalReason String?
+
+  approvedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  field              Field             @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  grid               Grid              @relation(fields: [gridId], references: [id], onDelete: Cascade)
+  growthStage        CropGrowthStage?  @relation(fields: [growthStageId], references: [id], onDelete: SetNull)
+  approvedBy         User?             @relation("ApprovedBy", fields: [approvedByUserId], references: [id], onDelete: SetNull)
+  items              PrescriptionItem[]
+  versions           PrescriptionVersion[]
+
+  @@index([organizationId])
+  @@index([fieldId])
+  @@index([gridId])
+  @@index([status])
+}
+
+model PrescriptionItem {
+  id                 String            @id @default(cuid())
+  prescriptionId     String
+  fertilizerId       String
+  recommendedRateKgHa Float
+  sequenceOrder      Int               @default(1)
+  splitStage         String?           // e.g. "BASE", "TOP_DRESS"
+  splitPercent       Float             @default(100.0) // For split applications
+
+  prescription       Prescription      @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  fertilizer         Fertilizer        @relation(fields: [fertilizerId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+  @@index([fertilizerId])
+}
+
+model PrescriptionVersion {
+  id                 String            @id @default(cuid())
+  prescriptionId     String
+  versionNumber      Int
+  status             String
+  targetRateKgHa     Float
+  minRateKgHa        Float
+  maxRateKgHa        Float
+  confidenceScore    Float
+  changeReason       String
+  snapshotJson       String            // Complete snapshot of inputs and outputs
+  createdAt          DateTime          @default(now())
+
+  prescription       Prescription      @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+
+  @@index([prescriptionId])
+}
+
+// ==========================================
+// SPRAYER FLEET & TELEMETRY
+// ==========================================
+
+model Sprayer {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  name               String            // "Alpha-Spray 01"
+  machineCode        String            @default("SPRAY-01")
+  manufacturer       String            @default("John Deere")
+  model              String            @default("John Deere 412R")
+  status             String            @default("ONLINE") // OFFLINE, IDLE, MOVING, SPRAYING, PAUSED, WARNING, ERROR, MANUAL
+  operatingMode      String            @default("AUTOMATIC") // AUTOMATIC, MANUAL, SIMULATION
+  
+  fertilizerId       String?
+  fertilizer         Fertilizer?       @relation(fields: [fertilizerId], references: [id], onDelete: SetNull)
+
+  // Current position & motion
+  latitude           Float
+  longitude          Float
+  headingDeg         Float             @default(0.0)
+  speedKmh           Float             @default(12.0)
+  currentFieldId     String?
+  currentGridId      String?
+  currentGridCode    String?
+
+  // Rates & flow telemetry
+  targetApplicationRate Float          @default(42.0)
+  currentApplicationRate Float         @default(40.8)
+  flowRateLpm        Float             @default(45.0)
+  swathWidthMeters   Float             @default(12.0)
+  valveState         String            @default("OPEN") // OPEN, THROTTLED, CLOSED
+  pumpState          String            @default("ON")   // ON, OFF
+
+  // Tank & Application status
+  tankCapacityL      Float             @default(4500.0)
+  currentTankLevelL  Float             @default(3800.0)
+  totalApplied       Float             @default(0.0)
+  applicationRateLpha Float            @default(140.0)
+
+  // Safety & control flags
+  emergencyStopped   Boolean           @default(false)
+  manualOverrideActive Boolean         @default(false)
+  telemetryStatus    String            @default("ONLINE")
+  simulationEnabled  Boolean           @default(true)
+
+  activeFertilizerName String          @default("NPK 19-19-19 Liquid")
+  lastHeartbeat      DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  applications       FertilizerApplication[]
+  controlDecisions   ControlDecision[]
+  telemetryEvents    TelemetryEvent[]
+  applicationEvents  FertilizerApplicationEvent[]
+  transitionEvents   GridTransitionEvent[]
+
+  @@index([organizationId])
+  @@index([currentGridId])
+}
+
+model FertilizerApplicationEvent {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  sprayerId          String
+  fieldId            String
+  gridId             String
+  fertilizerId       String
+  timestamp          DateTime          @default(now())
+  durationSeconds    Float             @default(1.0)
+  quantityKg         Float             // mass of fertilizer applied in this slice
+  applicationRateKgHa Float
+  nutrientN          Float             // pure N
+  nutrientP          Float             // pure P
+  nutrientK          Float             // pure K
+  latitude           Float
+  longitude          Float
+  prescriptionId     String?
+  controlDecisionId  String?
+  source             String            @default("SIMULATION") // SIMULATION, DEVICE
+  createdAt          DateTime          @default(now())
+
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+  fertilizer         Fertilizer        @relation(fields: [fertilizerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([sprayerId])
+  @@index([gridId])
+  @@index([fieldId])
+  @@index([timestamp])
+}
+
+model GridTransitionEvent {
+  id                     String            @id @default(cuid())
+  sprayerId              String
+  previousGridId         String?
+  newGridId              String
+  timestamp              DateTime          @default(now())
+  latitude               Float
+  longitude              Float
+  previousPrescriptionId String?
+  newPrescriptionId      String?
+  createdAt              DateTime          @default(now())
+
+  sprayer                Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+
+  @@index([sprayerId])
+  @@index([newGridId])
+  @@index([timestamp])
+}
+
+model TelemetryEvent {
+  id                 String            @id @default(cuid())
+  sprayerId          String
+  timestamp          DateTime          @default(now())
+  latitude           Float
+  longitude          Float
+  speedKmh           Float
+  flowRateLpm        Float
+  tankLevelL         Float
+  applicationRateLpha Float
+  machineStatus      String
+  rawPayloadJson     String?
+
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+
+  @@index([sprayerId])
+  @@index([timestamp])
+}
+
+model ControlDecision {
+  id                 String            @id @default(cuid())
+  sprayerId          String
+  gridId             String?
+  decision           String            // CONTINUE, REDUCE, STOP, MANUAL_OVERRIDE
+  reason             String
+  targetRate         Float
+  actualRate         Float
+  nutrientStateJson  String?
+  isAutomatic        Boolean           @default(true)
+  timestamp          DateTime          @default(now())
+
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+  grid               Grid?             @relation(fields: [gridId], references: [id], onDelete: SetNull)
+
+  @@index([sprayerId])
+  @@index([gridId])
+  @@index([timestamp])
+}
+
+// ==========================================
+// AUDIT & ACTIVITY TIMELINE
+// ==========================================
+
+model AuditLog {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  userId             String?
+  action             String            // USER_LOGIN, FARM_CREATED, FIELD_CREATED, PRESCRIPTION_APPROVED, etc.
+  entityType         String            // FARM, FIELD, GRID, PRESCRIPTION, APPLICATION
+  entityId           String?
+  metadataJson       String?
+  ipAddress          String?
+  timestamp          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user               User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model FarmActivity {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  actorName          String
+  action             String
+  entityType         String
+  entityName         String
+  description        String
+  timestamp          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  farm               Farm?             @relation(fields: [farmId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([farmId])
+  @@index([timestamp])
+}
