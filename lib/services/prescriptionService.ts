@@ -80,9 +80,23 @@ export class PrescriptionService {
       areaHectares: areaHa,
     });
 
-    // Step B: Soil Nutrient Availability Adjustment
+    // Step B: Soil Nutrient Availability Adjustment (Prioritize Milestone 14 Validated Baseline)
+    const activeBaseline = await prisma.fieldSoilBaseline.findFirst({
+      where: {
+        OR: [{ gridId: grid.id }, { fieldId: grid.fieldId, gridId: null }],
+        status: 'ACTIVE',
+      },
+      orderBy: { effectiveDate: 'desc' },
+    });
+
     const latestSoil = grid.soilProfiles[0] || null;
     const soilAdj = SoilAdjustmentService.estimateSoilNutrientAvailability(latestSoil as any);
+
+    if (activeBaseline) {
+      // Calibrate available nutrients directly from validated baseline
+      soilAdj.availableP.kgPerHa = Number((activeBaseline.pValue * 0.45).toFixed(1));
+      soilAdj.availableK.kgPerHa = Number((activeBaseline.kValue * 0.35).toFixed(1));
+    }
 
     // Step C: Previous Application History
     const history = ApplicationHistoryService.aggregateGridApplications(
@@ -262,12 +276,33 @@ export class PrescriptionService {
           targetRateKgHa: selectedOption.totalRateKgHa,
           minRateKgHa: selectedOption.minRateKgHa,
           maxRateKgHa: selectedOption.maxRateKgHa,
-          explanationText: reasons.join('\n• '),
-          reasonsJson: JSON.stringify(reasons),
+          explanationText: activeBaseline
+            ? `• Validated lab soil test baseline (${activeBaseline.version}) from ${new Date(
+                activeBaseline.effectiveDate
+              ).toLocaleDateString()} incorporated (P = ${activeBaseline.pValue} ppm, N = ${
+                activeBaseline.nValue
+              } kg/ha).\n• ` + reasons.join('\n• ')
+            : reasons.join('\n• '),
+          reasonsJson: JSON.stringify(
+            activeBaseline
+              ? [
+                  `Validated lab soil test baseline (${activeBaseline.version}) from ${new Date(
+                    activeBaseline.effectiveDate
+                  ).toLocaleDateString()} incorporated (P = ${activeBaseline.pValue} ppm, N = ${
+                    activeBaseline.nValue
+                  } kg/ha).`,
+                  ...reasons,
+                ]
+              : reasons
+          ),
           calculationTraceJson: JSON.stringify(calculationTrace),
           environmentalRisk: envEval.riskLevel,
           environmentalAction: envEval.status,
           environmentalReason: envEval.reason,
+          soilBaselineId: activeBaseline?.id,
+          soilBaselineVersion: activeBaseline?.version,
+          soilDataQuality: activeBaseline?.quality || 'HIGH',
+          soilSourceTypes: activeBaseline?.source || 'LAB_SOIL_TEST',
           items: {
             create: selectedOption.products.map((p, idx) => ({
               fertilizerId: p.fertilizerId || fertilizers[0].id,

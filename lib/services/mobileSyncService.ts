@@ -33,6 +33,13 @@ export class MobileSyncService {
       );
     }
 
+    // Deduplicate idempotently by actionId
+    const existingIndex = this.localActionQueue.findIndex((a) => a.actionId === action.actionId);
+    if (existingIndex >= 0) {
+      this.localActionQueue[existingIndex] = action;
+      return this.localActionQueue.length;
+    }
+
     this.localActionQueue.push(action);
     return this.localActionQueue.length;
   }

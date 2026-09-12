@@ -31,6 +31,8 @@ export default function MobileOperatorDashboard() {
     { id: 3, title: 'Check chemical tank level for next pass', priority: 'MEDIUM', status: 'IN_PROGRESS' },
   ]);
 
+  const [installPromptDismissed, setInstallPromptDismissed] = useState<boolean>(false);
+
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
     const handleOffline = () => setIsOnline(false);
@@ -43,8 +45,8 @@ export default function MobileOperatorDashboard() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-20 select-none">
-      {/* Mobile Top Header */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col pb-24 select-none">
+      {/* Mobile Top Header with Connection Indicator */}
       <header className="sticky top-0 z-40 bg-slate-900/95 border-b border-slate-800 px-4 py-3 backdrop-blur flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-full bg-emerald-500 animate-pulse" />
@@ -60,10 +62,44 @@ export default function MobileOperatorDashboard() {
                 : 'bg-amber-950 text-amber-300 border border-amber-700/60 animate-pulse'
             }`}
           >
-            {isOnline ? '● LIVE' : '○ OFFLINE CACHE'}
+            {isOnline ? '● LIVE (Synced)' : '○ OFFLINE CACHE'}
           </span>
+          <a
+            href="/mobile/profile"
+            className="rounded-full bg-slate-800 p-1 text-slate-300 hover:text-white"
+            title="Profile & Settings"
+          >
+            ⚙️
+          </a>
         </div>
       </header>
+
+      {/* Non-intrusive PWA Install Banner */}
+      {!installPromptDismissed && (
+        <div className="bg-emerald-950/70 border-b border-emerald-800/80 px-4 py-2 flex items-center justify-between text-xs text-emerald-200">
+          <div className="flex items-center gap-2">
+            <span>📲</span>
+            <span>Install SOIL IQ for offline field operation</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                alert('PWA install prompt triggered. Follow browser prompt to add to home screen.');
+                setInstallPromptDismissed(true);
+              }}
+              className="rounded bg-emerald-600 px-2 py-0.5 text-[11px] font-bold text-slate-950"
+            >
+              Install
+            </button>
+            <button
+              onClick={() => setInstallPromptDismissed(true)}
+              className="text-emerald-400 hover:text-white text-xs"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Operator Content */}
       <main className="p-4 space-y-4 max-w-md mx-auto w-full">
@@ -84,9 +120,17 @@ export default function MobileOperatorDashboard() {
               <span className="text-[10px] uppercase tracking-wider text-slate-400">Current Grid</span>
               <div className="text-2xl font-black text-emerald-400">{currentGrid.code}</div>
             </div>
-            <span className="rounded-lg bg-emerald-950 border border-emerald-700 px-3 py-1 text-xs font-bold text-emerald-300">
-              {currentGrid.status}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-lg bg-emerald-950 border border-emerald-700 px-3 py-1 text-xs font-bold text-emerald-300">
+                {currentGrid.status}
+              </span>
+              <a
+                href={`/mobile/grids/${currentGrid.code}`}
+                className="rounded-lg bg-slate-800 hover:bg-slate-700 px-2 py-1 text-[11px] text-slate-300 font-semibold border border-slate-700"
+              >
+                Inspect &rarr;
+              </a>
+            </div>
           </div>
 
           <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
@@ -141,6 +185,38 @@ export default function MobileOperatorDashboard() {
           </div>
         </div>
 
+        {/* Quick Module Grid */}
+        <div className="grid grid-cols-4 gap-2 text-center text-xs">
+          <a
+            href="/mobile/map"
+            className="rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 hover:border-emerald-500 transition flex flex-col items-center"
+          >
+            <span className="text-lg">🗺️</span>
+            <span className="text-[10px] font-bold text-slate-200 mt-1">Field Map</span>
+          </a>
+          <a
+            href="/mobile/prescriptions"
+            className="rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 hover:border-emerald-500 transition flex flex-col items-center"
+          >
+            <span className="text-lg">💊</span>
+            <span className="text-[10px] font-bold text-slate-200 mt-1">Prescriptions</span>
+          </a>
+          <a
+            href="/mobile/sensors"
+            className="rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 hover:border-emerald-500 transition flex flex-col items-center"
+          >
+            <span className="text-lg">📡</span>
+            <span className="text-[10px] font-bold text-slate-200 mt-1">Sensors</span>
+          </a>
+          <a
+            href="/mobile/notes"
+            className="rounded-xl border border-slate-800 bg-slate-900/90 p-2.5 hover:border-emerald-500 transition flex flex-col items-center"
+          >
+            <span className="text-lg">📝</span>
+            <span className="text-[10px] font-bold text-slate-200 mt-1">Notes</span>
+          </a>
+        </div>
+
         {/* Operator Tasks */}
         <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow space-y-2">
           <div className="flex items-center justify-between text-xs border-b border-slate-800 pb-2">
@@ -174,6 +250,10 @@ export default function MobileOperatorDashboard() {
           <span className="text-base">🏠</span>
           <span className="text-[10px]">Home</span>
         </a>
+        <a href="/mobile/map" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
+          <span className="text-base">🗺️</span>
+          <span className="text-[10px]">Map</span>
+        </a>
         <a href="/mobile/monitoring" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
           <span className="text-base">🚜</span>
           <span className="text-[10px]">Sprayer</span>
@@ -182,13 +262,13 @@ export default function MobileOperatorDashboard() {
           <span className="text-base">🔔</span>
           <span className="text-[10px]">Alerts</span>
         </a>
-        <a href="/mobile/notes" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
-          <span className="text-base">📝</span>
-          <span className="text-[10px]">Notes</span>
+        <a href="/mobile/tasks" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
+          <span className="text-base">📋</span>
+          <span className="text-[10px]">Tasks</span>
         </a>
-        <a href="/mobile/demo" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
-          <span className="text-base">⚡</span>
-          <span className="text-[10px]">Demo</span>
+        <a href="/mobile/profile" className="text-slate-400 hover:text-slate-200 flex flex-col items-center">
+          <span className="text-base">⚙️</span>
+          <span className="text-[10px]">Profile</span>
         </a>
       </nav>
     </div>

@@ -1,138 +1,167 @@
-'use client';
+// SOIL IQ - Deployment Readiness Audit Dashboard
+import React from 'react';
+import Link from 'next/link';
+import prisma from '@/lib/db/prisma';
+import {
+  ShieldCheck,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  ArrowRight,
+  ClipboardCheck,
+  Calendar,
+  Layers,
+  Sparkles,
+  Compass,
+} from 'lucide-react';
+import { DeploymentReadinessService } from '@/lib/services/deploymentReadinessService';
 
-import React, { useState } from 'react';
+export const dynamic = 'force-dynamic';
 
-interface ChecklistItem {
-  id: number;
-  label: string;
-  category: 'FARM' | 'SENSORS' | 'SPRAYER' | 'PRESCRIPTION' | 'SAFETY';
-  isReady: boolean;
-  blockerNotes?: string;
-}
+export default async function DeploymentReadinessPage() {
+  const org = await prisma.organization.findFirst();
+  if (!org) return <div>No organization.</div>;
 
-const INITIAL_CHECKLIST: ChecklistItem[] = [
-  { id: 1, label: 'Organization configured with multi-tenant isolation', category: 'FARM', isReady: true },
-  { id: 2, label: 'Farm boundaries & acreage declared', category: 'FARM', isReady: true },
-  { id: 3, label: 'Fields mapped with GeoJSON spatial polygons', category: 'FARM', isReady: true },
-  { id: 4, label: 'Centimeter spatial grids generated with N-P-K ledgers', category: 'FARM', isReady: true },
-  { id: 5, label: 'Soil sensor nodes provisioned & mapped to grids', category: 'SENSORS', isReady: true },
-  { id: 6, label: 'Sprayer profile & machine swath width calibrated', category: 'SPRAYER', isReady: true },
-  { id: 7, label: 'RTK-GNSS receiver verified with RTK_FIXED fix state', category: 'SPRAYER', isReady: true },
-  { id: 8, label: 'Flow meter totalizer pulse calibration validated', category: 'SPRAYER', isReady: true },
-  { id: 9, label: 'Chemical tank hydrostatic level threshold configured', category: 'SPRAYER', isReady: true },
-  { id: 10, label: 'Edge Gateway connected with active prescription cache', category: 'SAFETY', isReady: true },
-  { id: 11, label: 'Agronomic prescription approved by agronomist', category: 'PRESCRIPTION', isReady: true },
-  { id: 12, label: 'Environmental weather lockout policy active (80% rain threshold)', category: 'SAFETY', isReady: true },
-  { id: 13, label: 'Hardware Safety Gate verified (PHYSICAL_CONTROL_ENABLED safety check)', category: 'SAFETY', isReady: true },
-  { id: 14, label: 'Idempotency and audit logging active on all commands', category: 'SAFETY', isReady: true },
-];
-
-export default function DeploymentReadinessPage() {
-  const [checklist, setChecklist] = useState<ChecklistItem[]>(INITIAL_CHECKLIST);
-
-  const readyCount = checklist.filter((i) => i.isReady).length;
-  const readinessScore = Math.round((readyCount / checklist.length) * 100);
-
-  const toggleItem = (id: number) => {
-    setChecklist(
-      checklist.map((item) =>
-        item.id === id ? { ...item, isReady: !item.isReady } : item
-      )
-    );
-  };
+  const readiness = await DeploymentReadinessService.evaluateReadiness({
+    organizationId: org.id,
+  });
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-8">
-      <div className="max-w-4xl mx-auto space-y-6">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-          <div>
-            <span className="text-xs font-semibold uppercase tracking-wider text-emerald-400">
-              Pre-Operation Safety Verification
-            </span>
-            <h1 className="text-2xl font-black text-white mt-1">Deployment Readiness Checklist</h1>
-            <p className="text-xs text-slate-400 mt-1">
-              14-point hardware, spatial, agronomic, and safety verification prior to field machine deployment.
-            </p>
+    <div className="min-h-screen bg-[#070d08] text-[#e1ece3] p-6 lg:p-10 space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1c3322] pb-6">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-[#718d78] mb-1">
+            <Link href="/workspace" className="hover:text-emerald-400">Workspace</Link>
+            <span>/</span>
+            <span>Deployment Readiness</span>
           </div>
-          <div className="text-right">
-            <div className="text-xs text-slate-400">Prototype Readiness Score</div>
-            <div className="text-2xl font-black text-emerald-400 font-mono">
-              {readinessScore}/100
-            </div>
-          </div>
+          <h1 className="text-2xl lg:text-3xl font-bold text-white flex items-center gap-2">
+            <ShieldCheck className="w-7 h-7 text-emerald-400" />
+            Field Deployment Readiness Gate
+          </h1>
+          <p className="text-xs text-[#8ca893] mt-1">
+            Pre-flight verification across 8 engineering dimensions before physical tractor and smart sprayer deployment.
+          </p>
         </div>
 
-        {/* Readiness Status Banner */}
-        <div
-          className={`rounded-2xl p-5 border flex items-center justify-between ${
-            readinessScore === 100
-              ? 'border-emerald-700 bg-emerald-950/40 text-emerald-200'
-              : 'border-amber-700 bg-amber-950/40 text-amber-200'
-          }`}
-        >
-          <div>
-            <span className="text-xs uppercase font-bold tracking-wider">System State</span>
-            <div className="text-lg font-bold text-white">
-              {readinessScore === 100 ? 'READY FOR CONTROLLED DEMO OPERATION' : 'OPERATION BLOCKED — SAFETY INTERLOCKS PENDING'}
-            </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              {readyCount} of {checklist.length} safety and hardware preconditions verified.
-            </p>
-          </div>
-          <span
-            className={`rounded-xl px-4 py-2 text-xs font-black uppercase tracking-wider ${
-              readinessScore === 100
-                ? 'bg-emerald-600 text-white'
-                : 'bg-amber-600 text-slate-950'
-            }`}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/deployment/checklists"
+            className="flex items-center gap-2 px-4 py-2 bg-[#122417] hover:bg-[#1a3321] text-emerald-300 border border-[#23422a] rounded-lg text-xs font-semibold transition-all"
           >
-            {readinessScore === 100 ? 'READY' : 'NOT READY'}
+            <ClipboardCheck className="w-4 h-4 text-emerald-400" />
+            <span>13-Point Checklist</span>
+          </Link>
+          <Link
+            href="/deployment/plan"
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-semibold shadow-md transition-all"
+          >
+            <Calendar className="w-4 h-4" />
+            <span>Implementation Plan</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* Main Readiness Gate Card */}
+      <div
+        className={`border rounded-2xl p-6 lg:p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl ${
+          readiness.canDeploySafely
+            ? 'bg-gradient-to-r from-[#0c2214] to-[#0a170e] border-emerald-600/60'
+            : 'bg-gradient-to-r from-[#24130d] to-[#140b07] border-amber-600/60'
+        }`}
+      >
+        <div className="space-y-2 text-center md:text-left">
+          <div className="flex items-center justify-center md:justify-start gap-2">
+            {readiness.canDeploySafely ? (
+              <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-6 h-6 text-amber-400 shrink-0" />
+            )}
+            <h2 className="text-2xl font-bold text-white tracking-wide">
+              {readiness.overallStatus}
+            </h2>
+          </div>
+          <p className="text-xs text-[#9cb2a3] max-w-xl">
+            {readiness.canDeploySafely
+              ? 'All 8 engineering and agronomic dimensions have satisfied operational safety constraints. Smart sprayer unit SP-01 is authorized to execute closed-loop variable-rate prescriptions.'
+              : `Operational constraints active: ${readiness.activeBlockersCount} blocking issue(s) must be resolved before physical machine dispatch.`}
+          </p>
+        </div>
+
+        <div className="bg-[#08120a]/80 border border-[#1b3823] p-5 rounded-xl text-center shrink-0 min-w-[160px]">
+          <span className="text-[11px] text-[#718d78] uppercase font-bold tracking-wider block">
+            Readiness Index
+          </span>
+          <div className="text-4xl font-extrabold text-white mt-1">
+            {readiness.readinessScore}%
+          </div>
+          <span className="text-[10px] text-emerald-400 font-medium mt-0.5 block">
+            Quality Gate Threshold: 75%
           </span>
         </div>
+      </div>
 
-        {/* 14 Checklist Items */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-6 shadow-2xl space-y-3 text-xs">
-          <h2 className="text-sm font-bold text-white mb-2">Pre-Operation Verification Items</h2>
-          <div className="divide-y divide-slate-800/60">
-            {checklist.map((item) => (
-              <div
-                key={item.id}
-                onClick={() => toggleItem(item.id)}
-                className="py-3 flex items-center justify-between cursor-pointer hover:bg-slate-800/40 px-2 rounded-lg transition"
-              >
-                <div className="flex items-center gap-3">
-                  <input
-                    type="checkbox"
-                    checked={item.isReady}
-                    onChange={() => {}}
-                    className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-emerald-600 focus:ring-0"
-                  />
-                  <div>
-                    <span className="font-semibold text-white">{item.label}</span>
-                    <span className="ml-2 rounded bg-slate-800 px-1.5 py-0.5 text-[9px] font-mono text-slate-400">
-                      {item.category}
-                    </span>
-                  </div>
-                </div>
+      {/* 8 Readiness Dimensions Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {readiness.dimensions.map((dim) => (
+          <div
+            key={dim.id}
+            className="bg-[#0f1d13] border border-[#1e3825] rounded-xl p-5 flex flex-col justify-between space-y-3"
+          >
+            <div>
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-[#718d78]">{dim.id}</span>
                 <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-bold ${
-                    item.isReady
-                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-700/60'
-                      : 'bg-rose-950 text-rose-300 border border-rose-700/60'
+                  className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase ${
+                    dim.status === 'PASSED'
+                      ? 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                      : dim.status === 'WARNING'
+                      ? 'bg-amber-950 text-amber-300 border border-amber-800'
+                      : 'bg-rose-950 text-rose-300 border border-rose-800'
                   }`}
                 >
-                  {item.isReady ? 'VERIFIED' : 'PENDING'}
+                  {dim.status}
                 </span>
               </div>
-            ))}
-          </div>
-        </div>
 
-        {/* Regulatory Disclaimer */}
-        <div className="rounded-xl border border-slate-800 bg-slate-950 p-4 text-[11px] text-slate-400">
-          <strong className="text-slate-300">Agricultural Safety Disclaimer: </strong>
-          SOIL IQ is a software decision-support and control architecture prototype. Physical machinery deployment requires hardware validation, fail-safe testing, regulatory compliance, and qualified operator oversight.
-        </div>
+              <h3 className="text-sm font-bold text-white mt-2">{dim.name}</h3>
+              <p className="text-xs text-[#8ca893] mt-1">{dim.description}</p>
+            </div>
+
+            <div className="border-t border-[#172c1c] pt-2">
+              <div className="flex justify-between text-xs text-[#718d78] mb-1">
+                <span>Dimension Score</span>
+                <strong className="text-white">{dim.score}%</strong>
+              </div>
+              <div className="w-full bg-[#18281c] h-1.5 rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full ${
+                    dim.score >= 80
+                      ? 'bg-emerald-500'
+                      : dim.score >= 50
+                      ? 'bg-amber-500'
+                      : 'bg-rose-500'
+                  }`}
+                  style={{ width: `${dim.score}%` }}
+                ></div>
+              </div>
+
+              {dim.blockers.length > 0 && (
+                <div className="mt-2 text-[11px] text-rose-400 space-y-0.5">
+                  {dim.blockers.map((b, idx) => (
+                    <div key={idx}>• {b}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Engineering Disclaimer */}
+      <div className="text-center text-xs text-[#718d78] italic max-w-2xl mx-auto">
+        {readiness.disclaimer}
       </div>
     </div>
   );

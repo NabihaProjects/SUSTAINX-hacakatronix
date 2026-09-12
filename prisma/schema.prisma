@@ -35,6 +35,10 @@ model Organization {
   name          String
   slug          String               @unique
   plan          String               @default("ENTERPRISE")
+  organizationType String             @default("FARM") // FARM, COOPERATIVE, AGRICULTURAL_BUSINESS, RESEARCH_ORGANIZATION, UNIVERSITY, SERVICE_PROVIDER
+  currency      String               @default("USD")
+  unitSystem    String               @default("METRIC")
+  dataRetentionDays Int              @default(365)
   timezone      String               @default("UTC")
   createdAt     DateTime             @default(now())
   updatedAt     DateTime             @updatedAt
@@ -65,6 +69,11 @@ model Organization {
   operationEvents OperationEvent[]
   fieldNotes    FieldNote[]
   operatorTasks OperatorTask[]
+  pilotProjects PilotProject[]
+  reviewItems   AgronomicReviewItem[]
+  supportTickets SupportTicket[]
+  apiKeys       CustomerApiKey[]
+  deploymentChecklists DeploymentChecklist[]
 }
 
 model OrganizationMember {
@@ -419,6 +428,12 @@ model Prescription {
   environmentalRisk  String            @default("LOW") // LOW, MEDIUM, HIGH
   environmentalAction String           @default("PROCEED") // PROCEED, CAUTION, DEFER, BLOCK
   environmentalReason String?
+
+  // Milestone 14: Soil Baseline Provenance & Lineage
+  soilBaselineId     String?
+  soilBaselineVersion String?
+  soilDataQuality    String?           @default("HIGH") // HIGH, MEDIUM, LOW, ESTIMATED
+  soilSourceTypes    String?           @default("LAB_SOIL_TEST") // LAB_SOIL_TEST, SENSOR, ESTIMATED
 
   approvedAt         DateTime?
   createdAt          DateTime          @default(now())
@@ -1208,3 +1223,328 @@ model UserInvitation {
   @@index([organizationId])
   @@index([token])
 }
+
+// ==========================================
+// MILESTONE 14: SOIL TEST, BASELINE & VALIDATION
+// ==========================================
+
+model SoilTestReport {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String
+  fieldId            String
+  sampleId           String?
+  reportNumber       String            // e.g. "SR-2026-00412"
+  laboratoryName     String            // e.g. "National Ag Analytical Labs"
+  collectionDate     DateTime
+  testDate           DateTime
+  receivedDate       DateTime          @default(now())
+  uploadedByUserId   String?
+  source             String            @default("LAB_SOIL_TEST") // LAB_SOIL_TEST, GOVERNMENT_SOIL_REPORT, FIELD_SENSOR, FARMER_ENTRY, IMPORTED_DATA, ESTIMATED, SIMULATION
+  status             String            @default("VALIDATED") // DRAFT, IMPORTED, VALIDATED, REJECTED, ARCHIVED
+  notes              String?
+  documentReference  String?           // Reference to scanned PDF / lab cert
+  version            String            @default("v1.0")
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  samples            SoilSample[]
+
+  @@unique([organizationId, reportNumber])
+  @@index([organizationId])
+  @@index([fieldId])
+  @@index([status])
+}
+
+model SoilSample {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String
+  fieldId            String
+  gridId             String?
+  reportId           String?
+  sampleCode         String            // e.g. "SMP-F03-G047-01"
+  latitude           Float?
+  longitude          Float?
+  collectionDate     DateTime
+  depthCm            Float             @default(15.0) // Sampling depth in cm (e.g. 0-15cm, 15-30cm)
+  samplingMethod     String            @default("CORE_COMPOSITE") // CORE_COMPOSITE, AUGER, BULK_SURFACE
+  source             String            @default("LAB_SOIL_TEST")
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  report             SoilTestReport?   @relation(fields: [reportId], references: [id], onDelete: SetNull)
+  measurements       SoilLabMeasurement[]
+
+  @@unique([organizationId, sampleCode])
+  @@index([organizationId])
+  @@index([gridId])
+  @@index([fieldId])
+}
+
+model SoilLabMeasurement {
+  id                 String            @id @default(cuid())
+  sampleId           String
+  nutrientCode       String            // N, P, K, pH, EC, organicCarbon, S, Zn, Fe, Mn, B
+  value              Float
+  unit               String            // mg/kg, ppm, kg/ha, %, pH, dS/m
+  method             String?           // e.g. "Bray-1", "Olsen P", "Kjeldahl N", "Ammonium Acetate"
+  source             String            @default("LAB_SOIL_TEST")
+  confidence         Float             @default(0.95) // 0.0 - 1.0
+  quality            String            @default("HIGH") // HIGH, MEDIUM, LOW, INVALID
+  measuredAt         DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+
+  sample             SoilSample        @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@index([sampleId])
+  @@index([nutrientCode])
+  @@index([quality])
+}
+
+model NutrientDefinition {
+  id                 String            @id @default(cuid())
+  code               String            @unique // N, P, K, S, Zn, Fe, Mn, B, pH, EC, OC
+  name               String            // Nitrogen, Phosphorus, Potassium, etc.
+  symbol             String
+  standardUnit       String            // mg/kg, %, pH, dS/m
+  category           String            // MACRO, MICRO, SECONDARY, CHEMICAL, PHYSICAL
+  active             Boolean           @default(true)
+  createdAt          DateTime          @default(now())
+}
+
+model FieldSoilBaseline {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String
+  fieldId            String
+  gridId             String?           // Nullable for whole field baseline, set for grid baseline
+  reportId           String?
+  effectiveDate      DateTime          @default(now())
+  source             String            @default("LAB_SOIL_TEST") // LAB_SOIL_TEST, IMPORTED_DATA, SENSOR_ESTIMATE, FARMER_ENTRY, SIMULATION
+  
+  // Primary nutrients (normalized kg/ha or standard units)
+  nValue             Float             // Nitrogen baseline (kg/ha)
+  pValue             Float             // Phosphorus baseline (kg/ha)
+  kValue             Float             // Potassium baseline (kg/ha)
+  phValue            Float?            // Soil pH (e.g. 6.4)
+  ecValue            Float?            // EC in dS/m (e.g. 1.2)
+  ocValue            Float?            // Organic carbon % (e.g. 0.85%)
+  otherNutrientsJson String?           // Additional micronutrients (Zn, Fe, S, B)
+
+  confidenceScore    Float             @default(0.90) // 0.0 - 1.0
+  quality            String            @default("HIGH") // HIGH, MEDIUM, LOW
+  version            String            @default("v1") // v1, v2, v3
+  status             String            @default("ACTIVE") // DRAFT, REVIEW, APPROVED, ACTIVE, SUPERSEDED
+  approvedByUserId   String?
+  approvedAt         DateTime?
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  @@index([organizationId])
+  @@index([fieldId])
+  @@index([gridId])
+  @@index([status])
+}
+
+model SoilDataCorrection {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  targetType         String            // MEASUREMENT, BASELINE
+  targetId           String
+  fieldName          String            // e.g. "pValue"
+  originalValue      String
+  correctedValue     String
+  reason             String
+  userId             String?
+  createdAt          DateTime          @default(now())
+
+  @@index([organizationId])
+  @@index([targetId])
+}
+
+model SoilImportBatch {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  filename           String
+  source             String            @default("LAB_CSV_UPLOAD")
+  status             String            @default("IMPORTED") // PREVIEW, IMPORTED, FAILED
+  rowsDetected       Int               @default(0)
+  validRows          Int               @default(0)
+  invalidRows        Int               @default(0)
+  warningsCount      Int               @default(0)
+  errorsJson         String?
+  uploadedByUserId   String?
+  createdAt          DateTime          @default(now())
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ==========================================
+// MILESTONE 15: PILOT & COMMERCIALIZATION MODELS
+// ==========================================
+
+model PilotProject {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  name               String
+  description        String?
+  status             String            @default("PLANNED") // PLANNED, SETUP, ACTIVE, PAUSED, COMPLETED, CANCELLED
+  startDate          DateTime          @default(now())
+  plannedEndDate     DateTime?
+  actualEndDate      DateTime?
+  leadUser           String?           // Lead agronomist or farm operator name/email
+  crop               String            @default("Corn (Zea mays)")
+  area               Float             // Total trial area (e.g. 10.0 acres)
+  controlArea        Float             // Conventional uniform practice control area (e.g. 5.0 acres)
+  soilIQArea         Float             // Variable-rate SOIL IQ managed area (e.g. 5.0 acres)
+  baselineType       String            @default("CONTROL_AREA") // HISTORICAL, CONTROL_AREA, PREVIOUS_SEASON, USER_DEFINED, SIMULATION
+  baselineDescription String?
+  objectivesJson     String            // Array of objectives: FERTILIZER_REDUCTION, APPLICATION_ACCURACY, etc.
+  successCriteriaJson String           // Array of targets e.g. [{ metric: "fertilizer", targetPct: 18 }]
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  measurements       PilotMeasurementPlan[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model PilotMeasurementPlan {
+  id                 String            @id @default(cuid())
+  pilotId            String
+  category           String            // soil, fertilizer, weather, application, cost, yield, crop_condition, sensor_health
+  frequency          String            // daily, continuous, pre_post, harvest, weekly
+  source             String            // LAB_SOIL_TEST, FIELD_SENSOR, SPRAYER_TELEMETRY, MANUAL_OBSERVATION, SCALE_WEIGHT
+  unit               String            // kg/ha, %, dS/m, USD/ha, bu/acre
+  responsibleParty   String            // Agronomist, Machine Operator, Edge Gateway
+  recordsExpected    Int               @default(100)
+  recordsCollected   Int               @default(0)
+  qualityStatus      String            @default("HIGH") // HIGH, MEDIUM, LOW, INCOMPLETE
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  pilot              PilotProject      @relation(fields: [pilotId], references: [id], onDelete: Cascade)
+
+  @@index([pilotId])
+  @@index([category])
+}
+
+model AgronomicReviewItem {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  targetType         String            // SOIL_BASELINE, PRESCRIPTION, ANOMALY, DATA_CONFLICT, SAMPLING_REC
+  targetId           String            // ID of baseline, prescription, or grid
+  issueTitle         String
+  evidenceJson       String            // Evidence payload: lab test values, sensor data, difference pct
+  recommendationText String
+  confidenceScore    Float             @default(0.65)
+  status             String            @default("PENDING") // PENDING, APPROVED, REJECTED, NEEDS_MORE_DATA
+  reviewerId         String?
+  decisionNotes      String?
+  createdAt          DateTime          @default(now())
+  reviewedAt         DateTime?
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([targetType])
+}
+
+model KnowledgeSource {
+  id                 String            @id @default(cuid())
+  title              String
+  publisher          String
+  url                String?
+  documentReference  String?
+  publicationDate    DateTime?
+  sourceType         String            @default("RESEARCH") // GOVERNMENT, RESEARCH, UNIVERSITY, MANUFACTURER, INTERNAL, OTHER
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  articles           KnowledgeArticle[]
+}
+
+model KnowledgeArticle {
+  id                 String            @id @default(cuid())
+  category           String            // SOIL, FERTILIZER, CROPS, SENSORS, MACHINES, ENVIRONMENT, SOIL_IQ, OPERATIONS
+  title              String
+  summary            String
+  content            String
+  sourceId           String?
+  version            String            @default("1.0")
+  lastReviewedAt     DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  source             KnowledgeSource?  @relation(fields: [sourceId], references: [id], onDelete: SetNull)
+
+  @@index([category])
+}
+
+model SupportTicket {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  userId             String?
+  category           String            @default("OPERATIONAL") // HARDWARE, SENSOR, PRESCRIPTION, BILLING, GENERAL
+  priority           String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  farmId             String?
+  deviceId           String?
+  title              String
+  description        String
+  status             String            @default("OPEN") // OPEN, IN_PROGRESS, RESOLVED, CLOSED
+  resolutionNotes    String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model CustomerApiKey {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  name               String
+  keyHash            String            // SHA-256 hashed secret token
+  keyPrefix          String            // First 8 chars e.g. "siq_live_abc123"
+  scopesJson         String            // Array of scopes: READ_FARMS, READ_FIELDS, READ_GRIDS, READ_SOIL, etc.
+  status             String            @default("ACTIVE") // ACTIVE, REVOKED, EXPIRED
+  createdByUserId    String?
+  lastUsedAt         DateTime?
+  expiresAt          DateTime?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([keyPrefix])
+  @@index([status])
+}
+
+model DeploymentChecklist {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  fieldId            String?
+  sprayerId          String?
+  itemsJson          String            // 13 checklist verification items with status PENDING/PASSED/FAILED
+  readinessScore     Int               @default(0) // 0 - 100
+  status             String            @default("NOT_READY") // READY, NOT_READY
+  lastInspectedAt    DateTime          @default(now())
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
