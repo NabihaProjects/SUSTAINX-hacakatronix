@@ -76,24 +76,22 @@ export class SprayerService {
       }
     }
 
-    // Default fallback to first grid if simulated coordinate is outside
-    if (!currentGrid && grids.length > 0) {
-      currentGrid = grids[0];
-    }
-
     // 3. Closed-Loop Comparison: Telemetry vs Grid Prescription & Budget
-    let controlResult: ControlDecisionOutput = {
-      decision: 'CONTINUE',
-      reason: 'Sprayer operating normally within nominal boundaries.',
-      targetRate: 42.0,
-      actualRate: dto.applicationRateLpha,
-      variancePct: 0,
-      suggestedFlowRateAdjustmentPct: 0,
-      isAutomatic: true,
-      severity: 'NORMAL',
-    };
+    let controlResult: ControlDecisionOutput;
 
-    if (currentGrid) {
+    if (!currentGrid) {
+      // Conservative Safe Failure: Machine is outside mapped grids
+      controlResult = {
+        decision: 'STOP',
+        reason: 'POSITION_INVALID: Sprayer coordinates are outside mapped field grids. Automatic shutoff engaged.',
+        targetRate: 0,
+        actualRate: dto.applicationRateLpha,
+        variancePct: 100,
+        suggestedFlowRateAdjustmentPct: -100,
+        isAutomatic: true,
+        severity: 'CRITICAL',
+      };
+    } else {
       const activeRx = currentGrid.prescriptions[0];
       const budget = currentGrid.nutrientBudget;
 

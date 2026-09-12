@@ -73,3 +73,49 @@ export function isPointInPolygon(point: [number, number], polygon: [number, numb
 
   return inside;
 }
+
+/**
+ * Standard Agricultural Spray Application Formula:
+ * Application Rate (L/ha) = (Flow Rate (L/min) * 600) / (Speed (km/h) * Swath Width (m))
+ */
+export function calculateSprayApplicationRate(
+  flowRateLpm: number,
+  speedKmh: number,
+  swathWidthM: number
+): number {
+  if (speedKmh <= 0 || swathWidthM <= 0) return 0;
+  return Number(((flowRateLpm * 600) / (speedKmh * swathWidthM)).toFixed(2));
+}
+
+/**
+ * Calculate pure elemental nutrient contribution from formulated product mass.
+ * Example: 50 kg of NPK 19-19-19 contains 9.5 kg pure N.
+ */
+export function calculateNutrientFromProduct(
+  productKg: number,
+  percentage: number
+): number {
+  return Number(((productKg * percentage) / 100).toFixed(2));
+}
+
+/**
+ * Agronomic Oxide-to-Elemental Conversions (ICAR / FAO Standard):
+ * P = P2O5 * 0.4364 (or P2O5 = P * 2.2914)
+ * K = K2O * 0.8302 (or K2O = K * 1.2046)
+ */
+export function pElementalToOxide(pKg: number): number {
+  return Number((pKg * 2.2914).toFixed(3));
+}
+
+export function pOxideToElemental(p2o5Kg: number): number {
+  return Number((p2o5Kg / 2.2914).toFixed(2));
+}
+
+export function kElementalToOxide(kKg: number): number {
+  return Number((kKg * 1.2046).toFixed(3));
+}
+
+export function kOxideToElemental(k2oKg: number): number {
+  return Number((k2oKg / 1.2046).toFixed(2));
+}
+

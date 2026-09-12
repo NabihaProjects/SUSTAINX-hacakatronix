@@ -26,6 +26,8 @@ model User {
   auditLogs     AuditLog[]
   applications  FertilizerApplication[]
   approvedPrescriptions Prescription[] @relation("ApprovedBy")
+  feedbacks     RecommendationFeedback[]
+  scenarios     ScenarioSimulation[]
 }
 
 model Organization {
@@ -46,6 +48,23 @@ model Organization {
   prescriptions Prescription[]
   auditLogs     AuditLog[]
   activities    FarmActivity[]
+  insights      IntelligenceInsight[]
+  recommendations Recommendation[]
+  feedbacks     RecommendationFeedback[]
+  anomalies     AnomalyEvent[]
+  soilHealthSnapshots SoilHealthSnapshot[]
+  scenarios     ScenarioSimulation[]
+  alerts        Alert[]
+  notifications Notification[]
+  devices       Device[]
+  deviceConnections DeviceConnection[]
+  edgeGateways  EdgeGateway[]
+  deviceCommands DeviceCommand[]
+  deviceEvents  DeviceEvent[]
+  applicationSessions ApplicationSession[]
+  operationEvents OperationEvent[]
+  fieldNotes    FieldNote[]
+  operatorTasks OperatorTask[]
 }
 
 model OrganizationMember {
@@ -264,6 +283,8 @@ model Fertilizer {
 
   densityKgPerL      Float             @default(1.0) // For liquid volume-to-mass conversion
   defaultUnit        String            @default("kg")
+  unitPrice          Float             @default(0.68)
+  currency           String            @default("USD")
   isActive           Boolean           @default(true)
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
@@ -508,6 +529,9 @@ model Sprayer {
   telemetryEvents    TelemetryEvent[]
   applicationEvents  FertilizerApplicationEvent[]
   transitionEvents   GridTransitionEvent[]
+  sprayerProfile     SprayerProfile?
+  calibrations       MachineCalibration[]
+  applicationSessions ApplicationSession[]
 
   @@index([organizationId])
   @@index([currentGridId])
@@ -642,4 +666,545 @@ model FarmActivity {
   @@index([organizationId])
   @@index([farmId])
   @@index([timestamp])
+}
+
+// ==========================================
+// INTELLIGENCE, WHAT-IF & ANOMALIES (MILESTONE 7)
+// ==========================================
+
+model IntelligenceInsight {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  title              String
+  summary            String
+  priority           String            @default("MEDIUM") // HIGH, MEDIUM, LOW
+  category           String            @default("NUTRIENT") // NUTRIENT, SOIL, ENVIRONMENT, MACHINE, EFFICIENCY
+  source             String            @default("RULE_ENGINE") // RULE_ENGINE, STATISTICAL_MODEL, ML_MODEL, LLM_EXPLANATION, USER_INPUT, SIMULATION
+  confidence         Float             @default(0.85)
+  confidenceLevel    String            @default("HIGH") // LOW, MEDIUM, HIGH
+  modelVersion       String            @default("RULE_ENGINE_V1")
+  evidenceJson       String?           // Array of structured facts
+  recommendedAction  String?
+  potentialImpact    String?
+  status             String            @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, RESOLVED
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([priority])
+  @@index([category])
+  @@index([status])
+}
+
+model Recommendation {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  title              String
+  description        String
+  category           String            @default("FERTILIZER") // FERTILIZER, TIMING, IRRIGATION, MACHINE
+  actionType         String            @default("REDUCE_APPLICATION") // REDUCE_APPLICATION, CHANGE_FORMULATION, SPLIT_APPLICATION, DEFER_WEATHER
+  source             String            @default("RULE_ENGINE")
+  confidence         Float             @default(0.85)
+  modelVersion       String            @default("v1.0")
+  status             String            @default("PENDING") // PENDING, APPLIED, DISMISSED
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  feedbacks          RecommendationFeedback[]
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model RecommendationFeedback {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  recommendationId   String?
+  userId             String?
+  feedbackType       String            // HELPFUL, NOT_HELPFUL, INCORRECT, REQUIRES_REVIEW
+  notes              String?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  recommendation     Recommendation?   @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+  user               User?             @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([recommendationId])
+  @@index([feedbackType])
+}
+
+model AnomalyEvent {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  metricName         String            // soil_moisture, soil_p, flow_rate, application_deviation, etc.
+  anomalyType        String            @default("SOIL_ANOMALY") // SENSOR_ANOMALY, APPLICATION_ANOMALY, SOIL_ANOMALY, ENVIRONMENT_ANOMALY, MACHINE_ANOMALY
+  method             String            @default("THRESHOLD") // THRESHOLD, RATE_OF_CHANGE, MOVING_AVERAGE, Z_SCORE, FLATLINE, SUDDEN_SPIKE
+  expectedValue      Float?
+  actualValue        Float
+  deviationPct       Float?
+  severity           String            @default("WARNING") // INFO, WARNING, CRITICAL
+  description        String
+  rootCauseHypothesesJson String?      // Array of potential contributor strings with ranked likelihoods
+  isResolved         Boolean           @default(false)
+  resolvedAt         DateTime?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([anomalyType])
+  @@index([severity])
+  @@index([isResolved])
+}
+
+model SoilHealthSnapshot {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  overallScore       Float             // 0 - 100 prototype soil health index
+  nutrientBalanceScore Float           // 0 - 100
+  phScore            Float             // 0 - 100
+  organicCarbonScore Float             // 0 - 100
+  ecScore            Float             // 0 - 100
+  moistureStabilityScore Float         // 0 - 100
+  excessHistoryScore Float             // 0 - 100
+  dataConfidenceScore Float            // 0 - 100
+  componentsJson     String?           // Detailed breakdown object
+  snapshotDate       DateTime          @default(now())
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([snapshotDate])
+}
+
+model ScenarioSimulation {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  name               String
+  description        String?
+  scenarioType       String            @default("LESS_FERTILIZER") // MORE_FERTILIZER, LESS_FERTILIZER, WAIT_BEFORE_APPLICATION, CHANGE_FERTILIZER, SPLIT_APPLICATION, APPLY_NOW, DEFER_APPLICATION, HIGH_RAINFALL, LOW_RAINFALL, DIFFERENT_TARGET_RATE
+  inputsJson         String            // Parameters: product, rate, timing, delay, weather
+  resultsJson        String            // Simulated outputs: fertilizer kg/ha, N-P-K, budget%, cost, risk, soilHealth
+  baselineJson       String            // Baseline reference data
+  comparisonJson     String            // Delta calculations
+  createdByUserId    String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdByUser      User?             @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId])
+  @@index([scenarioType])
+}
+
+model ModelVersion {
+  id                 String            @id @default(cuid())
+  modelCode          String            @unique // e.g. "RULE_ENGINE_V1", "PREDICTION_ENGINE_V1"
+  name               String
+  version            String            @default("v1.0")
+  type               String            @default("RULE_ENGINE") // RULE_ENGINE, STATISTICAL_MODEL, PREDICTION_ENGINE, LLM_EXPLANATION
+  status             String            @default("ACTIVE") // ACTIVE, DEPRECATED, EXPERIMENTAL
+  configurationJson  String?
+  description        String?
+  createdAt          DateTime          @default(now())
+
+  @@index([modelCode])
+}
+
+// ==========================================
+// ALERTS & NOTIFICATIONS
+// ==========================================
+
+model Alert {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  sprayerId          String?
+  deviceId           String?
+  severity           String            @default("WARNING") // INFO, WARNING, CRITICAL
+  category           String            @default("HARDWARE") // HARDWARE, ENVIRONMENT, PRESCRIPTION, BUDGET, SAFETY
+  title              String
+  message            String
+  status             String            @default("OPEN") // OPEN, ACKNOWLEDGED, RESOLVED, DISMISSED
+  dedupKey           String            // Hash or composite key to prevent spam
+  occurrenceCount    Int               @default(1)
+  firstTriggeredAt   DateTime          @default(now())
+  lastTriggeredAt    DateTime          @default(now())
+  resolvedAt         DateTime?
+  resolvedByUserId   String?
+  resolutionNotes    String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([severity])
+  @@index([dedupKey])
+}
+
+model Notification {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  userId             String?
+  title              String
+  message            String
+  type               String            @default("SYSTEM") // ALERT, SYSTEM, PRESCRIPTION, TASK
+  link               String?
+  isRead             Boolean           @default(false)
+  readAt             DateTime?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+// ==========================================
+// HARDWARE, IoT & EDGE CONTROLLER FLEET
+// ==========================================
+
+model Device {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  deviceCode         String            @unique // e.g. "NODE-047", "FLOW-01"
+  name               String
+  deviceType         String            // SOIL_SENSOR, WEATHER_SENSOR, RTK_GNSS, FLOW_METER, TANK_SENSOR, SPRAYER, EDGE_GATEWAY, ACTUATOR, MULTI_SENSOR
+  hardwareVersion    String            @default("v1.0")
+  firmwareVersion    String            @default("1.2.0")
+  secretHash         String            // SHA-256 hashed token, never plaintext
+  clientId           String?
+  credentialStatus   String            @default("ACTIVE") // ACTIVE, ROTATION_PENDING, REVOKED, EXPIRED
+  batteryPct         Float             @default(100.0)
+  signalDbm          Float             @default(-65.0)
+  dataQualityScore   Float             @default(98.0)
+  lastSeenAt         DateTime          @default(now())
+  metadataJson       String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([deviceType])
+  @@index([credentialStatus])
+}
+
+model DeviceConnection {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  deviceId           String
+  connectionType     String            @default("MQTT") // MQTT, HTTP, BLE, LORA, LORAWAN, SERIAL, CAN, SIMULATION
+  status             String            @default("CONNECTED") // CONNECTED, DISCONNECTED, CONNECTING, DEGRADED, UNKNOWN
+  endpoint           String?
+  clientIdentifier   String?
+  protocolVersion    String            @default("1.0")
+  firmwareVersion    String            @default("1.2.0")
+  lastConnectedAt    DateTime          @default(now())
+  lastDisconnectedAt DateTime?
+  lastMessageAt      DateTime          @default(now())
+  metadataJson       String?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([status])
+}
+
+model EdgeGateway {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  name               String
+  deviceCode         String            @unique
+  version            String            @default("1.2.0")
+  status             String            @default("ONLINE") // ONLINE, OFFLINE, SYNCING
+  lastSeenAt         DateTime          @default(now())
+  networkMetadataJson String?
+  firmwareVersion    String            @default("1.2.0")
+  activePrescriptionCacheJson String?
+  localBufferCount   Int               @default(0)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model DeviceCommand {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  deviceId           String
+  command            String            // SET_APPLICATION_RATE, STOP_APPLICATION, START_APPLICATION, PAUSE_APPLICATION, RESET_DEVICE, REQUEST_STATUS, SET_MODE
+  parametersJson     String?
+  status             String            @default("QUEUED") // QUEUED, SENT, ACKNOWLEDGED, FAILED, TIMEOUT, CANCELLED
+  idempotencyKey     String            @unique
+  operatorUserId     String?
+  acknowledgedAt     DateTime?
+  errorCode          String?
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([status])
+}
+
+model DeviceEvent {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  deviceId           String
+  eventType          String            // DEVICE_CONNECTED, DEVICE_DISCONNECTED, RTK_FIX_CHANGED, FLOW_STARTED, FLOW_STOPPED, TANK_LOW, TANK_EMPTY, VALVE_OPENED, VALVE_CLOSED, EDGE_OFFLINE, COMMAND_ACKNOWLEDGED, COMMAND_FAILED, CALIBRATION_DUE
+  payloadJson        String?
+  timestamp          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([deviceId])
+  @@index([eventType])
+}
+
+model MachineCalibration {
+  id                 String            @id @default(cuid())
+  sprayerId          String
+  calibrationType    String            // FLOW, GPS_OFFSET, TANK, BOOM_WIDTH
+  status             String            @default("VALID") // VALID, DUE, EXPIRED, UNKNOWN
+  calibrationVersion String            @default("v1.0")
+  parametersJson     String?
+  calibratedAt       DateTime          @default(now())
+  calibratedBy       String?
+
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+
+  @@index([sprayerId])
+  @@index([status])
+}
+
+model SprayerProfile {
+  id                 String            @id @default(cuid())
+  sprayerId          String            @unique
+  machineWidthMeters Float             @default(12.0)
+  tankCapacityLiters Float             @default(600.0)
+  maxRateLpha        Float             @default(300.0)
+  minRateLpha        Float             @default(30.0)
+  responseTimeMs     Int               @default(350)
+  controllerType     String            @default("ISOBUS_EDGE")
+  supportedFertilizersJson String?
+
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// OPERATION SESSIONS & UNIFIED EVENT AUDIT
+// ==========================================
+
+model ApplicationSession {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String
+  fieldId            String
+  sprayerId          String
+  correlationId      String            @unique // e.g. "OP-2026-00047"
+  startTime          DateTime          @default(now())
+  endTime            DateTime?
+  status             String            @default("RUNNING") // PLANNED, RUNNING, PAUSED, COMPLETED, STOPPED, ABORTED
+  source             String            @default("SIMULATION") // SIMULATION, HIL, FIELD_HARDWARE
+  routeGeoJson       String?
+  distanceMeters     Float             @default(0.0)
+  gridsVisitedCount  Int               @default(0)
+  gridsTreatedCount  Int               @default(0)
+  targetQuantityKg   Float             @default(0.0)
+  actualQuantityKg   Float             @default(0.0)
+  deviationPct       Float             @default(0.0)
+  stopsCount         Int               @default(0)
+  reducedRateCount   Int               @default(0)
+  environmentalDeferralsCount Int          @default(0)
+  excessPreventedKg  Float             @default(0.0)
+  costImpactUsd      Float             @default(0.0)
+  createdByUserId    String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sprayer            Sprayer           @relation(fields: [sprayerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([sprayerId])
+  @@index([status])
+}
+
+model OperationEvent {
+  id                 String            @id @default(cuid())
+  timestamp          DateTime          @default(now())
+  sessionId          String?
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  sprayerId          String?
+  eventType          String            // SESSION_STARTED, GRID_ENTERED, PRESCRIPTION_LOADED, APPLICATION_STARTED, APPLICATION_RATE_CHANGED, APPLICATION_STOPPED, APPLICATION_DEFERRED, ENVIRONMENT_CHANGED, CONTROL_DECISION, ALERT_CREATED, ALERT_RESOLVED, MANUAL_OVERRIDE, EMERGENCY_STOP, SESSION_COMPLETED
+  source             String            @default("SIMULATION")
+  severity           String            @default("INFO") // INFO, WARNING, CRITICAL
+  message            String
+  metadataJson       String?
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([sessionId])
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+// ==========================================
+// VALIDATION, PROVENANCE & SCIENTIFIC AUDIT
+// ==========================================
+
+model AgronomicParameter {
+  id                 String            @id @default(cuid())
+  parameterKey       String            @unique // e.g. "RICE_TILLERING_DEFAULT"
+  crop               String
+  growthStage        String
+  nRequirementKgHa   Float
+  pRequirementKgHa   Float
+  kRequirementKgHa   Float
+  sourceType         String            @default("PROTOTYPE") // AUTHORITATIVE, RESEARCH, USER_CONFIGURED, PROTOTYPE, SIMULATION
+  sourceName         String            @default("ICAR / Prototype Calibration")
+  version            String            @default("v1.0")
+  effectiveDate      DateTime          @default(now())
+  validationStatus   String            @default("PROTOTYPE_ESTIMATE") // VALIDATED, PROTOTYPE_ESTIMATE, PENDING_FIELD_TRIAL
+}
+
+model ValidationClaim {
+  id                 String            @id @default(cuid())
+  claimText          String
+  category           String            // AGRONOMY, CONTROL, SUSTAINABILITY, HARDWARE, AI
+  evidenceType       String            // SIMULATED, ESTIMATED, MEASURED, PROJECTED
+  evidenceSummary    String
+  limitations        String
+  futureValidationPlan String
+  status             String            @default("VERIFIED_IN_SIMULATION") // VERIFIED_IN_SIMULATION, PROPOSED_TRIAL, THEORETICAL
+}
+
+// ==========================================
+// FIELD OPERATOR PWA (NOTES & TASKS)
+// ==========================================
+
+model FieldNote {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  userId             String?
+  category           String            @default("SOIL") // SOIL, CROP, MACHINE, WEATHER, OTHER
+  text               String
+  photoUrl           String?
+  isOfflineQueued    Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([gridId])
+  @@index([category])
+}
+
+model OperatorTask {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  farmId             String?
+  fieldId            String?
+  gridId             String?
+  title              String
+  description        String?
+  priority           String            @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status             String            @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, CANCELLED
+  assigneeId         String?
+  completedAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  organization       Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([priority])
+}
+
+// ==========================================
+// SAAS SUBSCRIPTIONS & INVITATIONS
+// ==========================================
+
+model SubscriptionPlan {
+  id                 String            @id @default(cuid())
+  name               String            // FREE, PRO, ENTERPRISE
+  code               String            @unique
+  maxFarms           Int               @default(3)
+  maxGrids           Int               @default(500)
+  maxSprayers        Int               @default(2)
+  maxSensors         Int               @default(20)
+  priceMonthlyUsd    Float             @default(0.0)
+  featuresJson       String?
+  createdAt          DateTime          @default(now())
+}
+
+model OrganizationSubscription {
+  id                 String            @id @default(cuid())
+  organizationId     String            @unique
+  planCode           String            @default("ENTERPRISE")
+  status             String            @default("ACTIVE") // ACTIVE, TRIALING, PAST_DUE, CANCELED
+  currentPeriodStart DateTime          @default(now())
+  currentPeriodEnd   DateTime          @default(now())
+  cancelAtPeriodEnd  Boolean           @default(false)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+model UserInvitation {
+  id                 String            @id @default(cuid())
+  organizationId     String
+  email              String
+  role               String            @default("VIEWER")
+  token              String            @unique
+  expiresAt          DateTime
+  acceptedAt         DateTime?
+  createdAt          DateTime          @default(now())
+
+  @@index([organizationId])
+  @@index([token])
 }

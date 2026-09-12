@@ -14,6 +14,8 @@ import {
   Settings,
   Layers,
   Zap,
+  FlaskConical,
+  Bot,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -21,6 +23,8 @@ const NAV_ITEMS = [
   { label: 'Farms & Fields', href: '/farms', icon: MapPin },
   { label: 'Live Monitoring', href: '/monitoring', icon: Radar, badge: 'LIVE' },
   { label: 'Sprayer Simulator', href: '/simulation/sprayer', icon: Zap, badge: 'SIM' },
+  { label: 'What-If Engine', href: '/simulation/what-if', icon: FlaskConical, badge: 'AI' },
+  { label: 'AI Farm Assistant', href: '/assistant', icon: Bot, badge: 'GPT' },
   { label: 'Prescriptions', href: '/prescriptions', icon: FileSpreadsheet },
   { label: 'Fleet Sprayers', href: '/sprayers', icon: Truck },
   { label: 'Analytics', href: '/analytics', icon: LineChart },
