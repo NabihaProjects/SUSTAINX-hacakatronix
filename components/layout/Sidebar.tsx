@@ -30,7 +30,7 @@ const NAV_ITEMS = [
   { label: 'Farms & Fields', href: '/farms', icon: MapPin },
   { label: 'Soil Intelligence', href: '/soil-tests', icon: TestTubes, badge: 'LAB' },
   { label: 'Agronomist Review', href: '/review', icon: ShieldCheck, badge: 'GATE' },
-  { label: 'Controlled Pilots', href: '/workspace', icon: Compass, badge: 'PILOT' },
+  { label: 'Controlled Pilots', href: '/pilots', icon: Compass, badge: 'PILOT' },
   { label: 'Live Monitoring', href: '/monitoring', icon: Radar, badge: 'LIVE' },
   { label: 'Sprayer Simulator', href: '/simulation/sprayer', icon: Zap, badge: 'SIM' },
   { label: 'What-If Engine', href: '/simulation/what-if', icon: FlaskConical, badge: 'AI' },
@@ -77,7 +77,7 @@ export function Sidebar() {
 
           return (
             <Link
-              key={item.href}
+              key={item.label}
               href={item.href}
               className={`flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 isActive

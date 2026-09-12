@@ -2,6 +2,7 @@
 import React from 'react';
 import Link from 'next/link';
 import prisma from '@/lib/db/prisma';
+import { AppShell } from '@/components/layout/AppShell';
 import {
   ShieldCheck,
   CheckCircle2,
@@ -30,7 +31,8 @@ export default async function AgronomistReviewPage() {
   const pendingCount = reviewItems.filter((i) => i.status === 'PENDING').length;
 
   return (
-    <div className="min-h-screen bg-[#070d08] text-[#e1ece3] p-6 lg:p-10 space-y-8">
+    <AppShell>
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#1c3322] pb-6">
         <div>
@@ -141,7 +143,22 @@ export default async function AgronomistReviewPage() {
             </div>
           );
         })}
+        {/* Empty State */}
+        {reviewItems.length === 0 && (
+          <div className="flex flex-col items-center justify-center py-20 text-center bg-[#0f1d13] border border-[#1e3825] rounded-2xl">
+            <CheckCircle2 className="w-12 h-12 text-emerald-600 mb-4" />
+            <h3 className="text-lg font-bold text-white mb-2">All Clear — No Pending Reviews</h3>
+            <p className="text-sm text-[#8ca893] max-w-md">
+              There are currently no prescriptions or baselines flagged for agronomist review.
+              Low-confidence items and sensor-lab discrepancies will appear here automatically.
+            </p>
+            <div className="mt-6 px-4 py-2 bg-emerald-900/20 border border-emerald-700/30 rounded-lg text-xs text-emerald-300">
+              Automated interlock: Machine actuation is gated until review sign-off.
+            </div>
+          </div>
+        )}
       </div>
     </div>
+    </AppShell>
   );
 }
