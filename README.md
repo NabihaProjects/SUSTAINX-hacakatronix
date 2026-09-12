@@ -1,27 +1,4 @@
-Absolutely. Below is a **complete, GitHub-ready README.md** for SOIL IQ that explains the project, architecture, features, MQTT/mobile simulation, setup, demo flow, safety limitations, and future roadmap.
-
-You can create a file named **`README.md`** in the root of your repository and paste this in.
-
-````markdown
-# 🌱 SOIL IQ
-
-### Grid-Level Precision Fertilizer Management
-
-> **Every grid gets a prescription. Every application gets measured. Every decision gets explained.**
-
-SOIL IQ is a precision-agriculture SaaS platform designed to reduce unnecessary fertilizer application by connecting **soil intelligence, spatial grid mapping, crop requirements, environmental conditions, and real-time machine telemetry** into one closed-loop decision system.
-
-Instead of giving a farmer one fertilizer recommendation for an entire field, SOIL IQ divides the field into intelligent grids and determines what each grid needs.
-
-The system then connects those grid-specific recommendations to a simulated or real smart sprayer.
-
-As the sprayer moves through the field:
-
-**Locate → Understand → Prescribe → Apply → Measure → Compare → Control → Learn**
-
----
-
-# 📌 Table of Contents
+#📌 Table of Contents
 
 - [Problem](#-problem)
 - [Solution](#-solution)
