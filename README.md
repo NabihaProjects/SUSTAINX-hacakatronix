@@ -930,43 +930,6 @@ The prototype demonstrates the **technology architecture and decision loop**. Re
 
 ---
 
-# 🚀 Current Prototype Status
-
-### Implemented / Prototyped
-
-✅ Multi-tenant SaaS architecture
-✅ Farm and field management
-✅ Spatial grid generation
-✅ Grid-level nutrient budgets
-✅ Soil data architecture
-✅ Fertilizer formulation model
-✅ Prescription engine
-✅ Explainable recommendations
-✅ Sensor simulation
-✅ Telemetry architecture
-✅ Smart sprayer simulation
-✅ Grid-aware application tracking
-✅ Variable-rate application logic
-✅ Environmental risk engine
-✅ Weather-aware defer/block logic
-✅ Anomaly detection
-✅ Soil-health trajectory
-✅ What-If simulation
-✅ Impact analytics
-✅ Alerts and audit trails
-✅ Hardware-ready architecture
-✅ PWA/mobile field experience
-✅ Soil-test import and validation architecture
-✅ Judge/demo mode
-
-### Current limitation
-
-The current hackathon implementation uses **simulated sensors, simulated machine telemetry, and prototype agronomic parameters**.
-
-The next stage is controlled field validation with real soil-test data, sensor hardware, machine telemetry, and qualified agronomic oversight.
-
----
-
 # 🏆 The SOIL IQ Vision
 
 Agriculture does not need another dashboard that tells farmers:
