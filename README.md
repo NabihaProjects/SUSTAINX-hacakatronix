@@ -1,2304 +1,994 @@
-#📌 Table of Contents
+# 🌱 SOIL IQ
 
-- [Problem](#-problem)
-- [Solution](#-solution)
-- [Core Innovation](#-core-innovation)
-- [How SOIL IQ Works](#-how-soil-iq-works)
-- [Key Features](#-key-features)
-- [System Architecture](#-system-architecture)
-- [IoT Architecture](#-iot-architecture)
-- [MQTT + Mobile Demo](#-mqtt--mobile-demo)
-- [Grid Intelligence](#-grid-intelligence)
-- [Prescription Engine](#-prescription-engine)
-- [Smart Sprayer](#-smart-sprayer)
-- [Environmental Intelligence](#-environmental-intelligence)
-- [AI and Explainability](#-ai-and-explainability)
-- [Impact Measurement](#-impact-measurement)
-- [SaaS Architecture](#-saas-architecture)
-- [User Roles](#-user-roles)
-- [Technology Stack](#-technology-stack)
-- [Project Structure](#-project-structure)
-- [Getting Started](#-getting-started)
-- [Environment Variables](#-environment-variables)
-- [Database Setup](#-database-setup)
-- [Running the Application](#-running-the-application)
-- [Demo Mode](#-demo-mode)
-- [MQTT Demo](#-mqtt-demo)
-- [Mobile Simulator](#-mobile-simulator)
-- [Testing](#-testing)
-- [Deployment](#-deployment)
-- [Hardware Integration](#-hardware-integration)
-- [Scientific Guardrails](#-scientific-guardrails)
-- [Limitations](#-limitations)
-- [Future Roadmap](#-future-roadmap)
-- [Sustainability Alignment](#-sustainability-alignment)
-- [Why SOIL IQ](#-why-soil-iq)
-- [Team](#-team)
-- [License](#-license)
+### **Grid-Level Precision Fertilizer Management**
 
----
+> **Every grid gets a prescription. Every application gets measured. Every decision gets explained.**
 
-# 🌍 Problem
+SOIL IQ is a precision-agriculture platform designed to help farmers reduce unnecessary fertilizer application while maintaining responsible nutrient management.
 
-Fertilizer application is often based on generalized recommendations or uniform application practices.
+Instead of treating an entire farm as one homogeneous area, SOIL IQ divides farmland into intelligent spatial grids and builds a digital understanding of each grid using **soil data, crop information, fertilizer history, environmental conditions, and machine telemetry**.
 
-However, a single field can contain significant variation in:
+The system then creates a **field-specific nutrient/application budget**, monitors fertilizer application against that recommendation, evaluates environmental conditions, and provides an explainable decision:
 
-- soil nutrient availability
-- soil moisture
-- pH
-- crop condition
-- crop growth stage
-- previous fertilizer application
-- environmental conditions
-- nutrient requirements
+**CONTINUE → REDUCE → DEFER → STOP**
 
-At the same time, conventional systems may not continuously verify:
-
-> **Where the machine is, what that part of the field needs, and how much fertilizer is actually being applied.**
-
-This can lead to:
-
-- unnecessary fertilizer application
-- nutrient imbalance
-- inefficient input use
-- avoidable input costs
-- nutrient-loss risk
-- poor spatial management
-- insufficient long-term soil monitoring
-
-The problem is therefore not simply:
-
-> "Farmers need fertilizer recommendations."
-
-The deeper problem is:
-
-> **Farmers need a system that connects field-specific nutrient requirements with the fertilizer actually being applied.**
-
----
-
-# 💡 Solution
-
-## SOIL IQ
-
-SOIL IQ converts a farm into a **spatially intelligent digital field**.
-
-The farm is divided into grids.
-
-Each grid can have its own:
-
-- crop
-- growth stage
-- soil condition
-- nutrient baseline
-- fertilizer history
-- environmental state
-- recommendation
-- nutrient budget
-- application history
-
-The platform then synchronizes this grid information with a smart sprayer.
-
-The machine knows:
-
-### WHERE AM I?
-RTK-GNSS / positioning
-
-### WHAT DOES THIS GRID NEED?
-SOIL IQ prescription engine
-
-### HOW MUCH AM I APPLYING?
-Flow/application telemetry
-
-### IS IT APPROPRIATE TO APPLY NOW?
-Environmental intelligence
-
-### WHAT SHOULD THE MACHINE DO?
-Control engine
-
-The result is a closed-loop fertilizer management system.
-
----
-
-# 🚀 Core Innovation
-
-SOIL IQ is not simply:
-
-- a fertilizer calculator
-- a soil-health dashboard
-- an AI chatbot
-- a weather application
-- a farm-management dashboard
-
-The key innovation is the integration of:
+The result is a closed-loop approach to fertilizer management:
 
 ```text
-SOIL INTELLIGENCE
-        ↓
-GRID-SPECIFIC PRESCRIPTION
-        ↓
-MACHINE LOCATION
-        ↓
-ACTUAL APPLICATION MEASUREMENT
-        ↓
-ENVIRONMENTAL VALIDATION
-        ↓
-REAL-TIME CONTROL
-        ↓
-IMPACT MEASUREMENT
-````
-
-### The central principle
-
-> **SOIL IQ connects what the soil needs with what the machine actually applies — grid by grid, in real time.**
-
----
-
-# 🔄 How SOIL IQ Works
-
-## 1. Farm Setup
-
-The user creates:
-
-* Organization
-* Farm
-* Fields
-* Crops
-* Field boundaries
-
-Example:
-
-```text
-Farm:
-Green Valley Farm
-
-Area:
-10 acres
-
-Fields:
-5
-
-Field Area:
-2 acres each
-
-Crops:
-Rice
-Tomato
-Maize
-Cotton
-Groundnut
+SENSE
+  ↓
+LOCATE
+  ↓
+UNDERSTAND
+  ↓
+PRESCRIBE
+  ↓
+APPLY
+  ↓
+MEASURE
+  ↓
+COMPARE
+  ↓
+CONTROL
+  ↓
+LEARN
 ```
 
 ---
 
-## 2. Grid Creation
+# 🌍 The Problem
 
-Each field is divided into smaller spatial grids.
+Modern agriculture depends heavily on fertilizers to maintain productivity. The problem is not fertilizer itself — it is **inefficient, excessive, poorly timed, or non-spatial application**.
 
-Example:
+A conventional field may be treated as:
 
 ```text
-┌───────┬───────┬───────┬───────┐
-│ G001  │ G002  │ G003  │ G004  │
-├───────┼───────┼───────┼───────┤
-│ G005  │ G006  │ G007  │ G008  │
-├───────┼───────┼───────┼───────┤
-│ G009  │ G010  │ G011  │ G012  │
-└───────┴───────┴───────┴───────┘
+Entire field
+      ↓
+One generalized recommendation
+      ↓
+Uniform application
 ```
 
-Every grid becomes a spatial unit for analysis.
+But real fields are heterogeneous.
+
+Different areas can have different:
+
+* soil characteristics
+* nutrient availability
+* moisture
+* crop conditions
+* growth stages
+* fertilizer histories
+* environmental risks
+
+This creates a major gap between:
+
+> **What the soil actually needs**
+
+and
+
+> **What the machine actually applies.**
+
+Excessive or poorly managed fertilizer use can contribute to nutrient imbalance, unnecessary input costs, nutrient losses, and long-term soil and environmental concerns.
+
+SOIL IQ addresses this gap by connecting **field intelligence directly with fertilizer application**.
 
 ---
 
-# 🧪 Grid Intelligence
+# 💡 Our Solution
 
-Every grid can contain:
+## SOIL IQ — A Closed-Loop Precision Fertilizer Management System
 
-```text
-Grid: G047
+SOIL IQ transforms a farm into a spatially intelligent digital environment.
 
-Crop:
-Rice
+### 1. 🗺️ Divide the farm into intelligent grids
 
-Growth Stage:
-Tillering
+A farm is divided into spatial grids.
 
-Soil:
-Red Soil
+Each grid stores its own contextual state:
 
-pH:
-6.4
-
-Moisture:
-42%
-
-EC:
-1.1
-
-N:
-Available / Estimated
-
-P:
-Available / Estimated
-
-K:
-Available / Estimated
-
-Previous Fertilizer:
-NPK + Urea
-
-Nutrient Budget:
-N / P / K
-
-Prescription:
-Field-specific
-
-Environmental Risk:
-Low / Medium / High
-```
-
-SOIL IQ distinguishes between:
-
-* measured
-* tested
-* estimated
-* simulated
-* projected
-
-data.
-
----
-
-# 🧾 Soil Data Sources
-
-SOIL IQ supports multiple sources.
-
-### Laboratory / Soil Test
-
-Used to establish nutrient baselines.
-
-### Continuous Sensor Data
-
-Used for environmental/contextual measurements such as:
-
-* soil moisture
-* soil temperature
+* Crop
+* Growth stage
+* Soil type
+* Soil-test data
+* Soil sensor measurements
+* Moisture
+* pH
 * EC
-* pH where supported
+* N/P/K information where available
+* Previous fertilizer applications
+* Environmental conditions
+* Nutrient budget
+* Prescription status
 
-### Historical Applications
+Instead of:
 
-Used to understand previous nutrient inputs.
+> “This 10-acre farm needs X fertilizer”
 
-### Estimated Spatial Data
+SOIL IQ can reason:
 
-Used where direct soil measurements are unavailable.
-
-### Simulation Data
-
-Used for the hackathon demonstration.
-
-This separation is important because a prototype should not pretend that every low-cost sensor directly measures laboratory-grade nutrient availability.
+> “Grid G047 requires a different application strategy from G048 because their field conditions and nutrient states differ.”
 
 ---
 
-# 🧠 Prescription Engine
+# 🧪 2. Soil Intelligence
 
-SOIL IQ calculates a field/grid-specific prescription using:
+SOIL IQ separates different kinds of agricultural data rather than pretending everything comes from one sensor.
+
+### Data Sources
+
+**Laboratory / Soil Tests**
+
+* N
+* P
+* K
+* pH
+* EC
+* Organic carbon
+* Other available nutrients
+
+**Continuous Sensors**
+
+* Soil moisture
+* Soil temperature
+* pH/EC where supported
+* Environmental measurements
+
+**Historical Data**
+
+* Previous fertilizer applications
+* Crop history
+* Grid history
+
+Every measurement can be classified as:
+
+`MEASURED` · `ESTIMATED` · `IMPORTED` · `SIMULATED` · `PROJECTED`
+
+This makes the platform transparent about **what it knows and how it knows it**.
+
+---
+
+# 📊 3. Grid-Level Nutrient Budget
+
+Each grid maintains its own nutrient/application state.
+
+Example:
+
+```text
+GRID G047
+
+Nitrogen
+████████░░  82%
+
+Phosphorus
+██████░░░░  61%
+
+Potassium
+████░░░░░░  39%
+```
+
+The system tracks:
+
+* recommended nutrient budget
+* consumed nutrient quantity
+* remaining budget
+* excess application
+* historical applications
+
+Importantly, SOIL IQ does **not** use a universal “safe fertilizer limit”.
+
+It uses:
+
+> **Field-specific recommended nutrient budgets and application ranges**
+
+based on the available agronomic inputs.
+
+---
+
+# 📐 4. Prescription Engine
+
+SOIL IQ combines:
 
 ```text
 Crop
 +
 Growth Stage
 +
-Soil Baseline
-+
-Current Sensor State
+Soil State
 +
 Previous Applications
 +
 Fertilizer Formulation
 +
 Environmental Conditions
-        ↓
-Prescription
 ```
 
-The prescription may contain:
+to create a **grid-specific prescription**.
 
-* recommended product
-* minimum application
+A prescription contains:
+
+* recommended fertilizer
+* recommended application range
 * target application
-* maximum recommended range
 * nutrient contribution
 * confidence
+* environmental status
 * explanation
 
 Example:
 
 ```text
-Grid:
-G047
+RECOMMENDED APPLICATION
 
-Fertilizer:
 NPK 19-19-19
 
-Recommended Range:
 38–44 kg/ha
+TARGET: 41 kg/ha
 
-Target:
-41 kg/ha
-
-Confidence:
-MEDIUM
-
-Status:
-READY
+CONFIDENCE: MEDIUM
 ```
 
-### Important
-
-SOIL IQ does **not** claim a universal fertilizer "safe limit."
-
-It uses:
-
-* field-specific nutrient budgets
-* recommended application ranges
-* target application levels
-
-Prototype agronomic values are explicitly treated as configurable and require real-world agronomic validation before deployment.
+Every recommendation includes an explanation of **why** it was generated.
 
 ---
 
-# 📊 Nutrient Ledger
+# 🚜 5. Smart Sprayer Simulation
 
-Each grid maintains a nutrient budget.
+The SOIL IQ prototype includes a simulated smart sprayer.
 
-Example:
+The sprayer has a digital representation of:
 
-```text
-G047
-
-N:
-Recommended = 100 units
-Consumed = 72 units
-Remaining = 28 units
-
-P:
-Recommended = 60 units
-Consumed = 56 units
-Remaining = 4 units
-
-K:
-Recommended = 80 units
-Consumed = 40 units
-Remaining = 40 units
-```
-
-If additional fertilizer is applied:
-
-```text
-Consumed ↑
-Remaining ↓
-```
-
-If the recommended budget is exceeded:
-
-```text
-Remaining = 0
-Excess = recorded separately
-```
-
-SOIL IQ never hides excess application.
-
----
-
-# 🚜 Smart Sprayer
-
-SOIL IQ models the fertilizer machine using:
-
-* RTK-GNSS
-* flow/application sensor
-* tank-level sensor
+* position
 * speed
 * heading
-* fertilizer formulation
+* fertilizer
+* flow rate
+* tank level
+* current grid
 * application rate
 * machine status
 
-The system continuously determines:
+As the sprayer moves across the farm:
 
 ```text
-Where is the machine?
-        ↓
-Which grid?
-        ↓
-Which prescription?
-        ↓
-How much remains?
-        ↓
-How much is actually being applied?
-        ↓
-What should the machine do?
+Position
+   ↓
+Current Grid
+   ↓
+Active Prescription
+   ↓
+Target Application
+   ↓
+Actual Flow
+   ↓
+Control Decision
 ```
+
+This demonstrates how a future real machine could integrate with the system.
 
 ---
 
-# 📍 Grid Detection
+# 🎯 6. Spatial Application Control
 
-Machine position is mapped against field/grid geometry.
+SOIL IQ supports variable-rate application.
 
-Conceptually:
-
-```text
-RTK Position
-      ↓
-Latitude + Longitude
-      ↓
-Field Boundary
-      ↓
-Grid Polygon
-      ↓
-Current Grid ID
-```
-
-Example:
+Different grids can have different target rates:
 
 ```text
-Machine:
-17.12345, 80.54321
+G041 → 100%
 
-Resolved Grid:
-G047
+G042 → 70%
+
+G043 → 40%
+
+G044 → 0%
 ```
 
-SOIL IQ uses spatial geometry rather than simply choosing the nearest grid center.
+The system therefore moves beyond:
+
+> ON / OFF
+
+toward:
+
+> **Apply only what the current grid requires.**
+
+The prototype simulates the entire control loop.
 
 ---
 
-# 📡 MQTT Communication
+# 🌧️ 7. Environmental Intelligence
 
-MQTT provides the communication layer between:
+A fertilizer recommendation should not depend only on nutrient availability.
 
-* mobile simulator
-* simulated soil nodes
-* sprayer telemetry
-* SOIL IQ backend
-* dashboard
-
-Example topic:
-
-```text
-soil-iq/demo/sprayer/SPRAYER-01/telemetry
-```
-
-Example message:
-
-```json
-{
-  "version": "1.0",
-  "deviceId": "SPRAYER-01",
-  "timestamp": "2026-09-12T08:00:00Z",
-  "type": "telemetry",
-  "payload": {
-    "latitude": 17.12345,
-    "longitude": 80.54321,
-    "speed": 4.2,
-    "heading": 90,
-    "flowRate": 12.5,
-    "tankLevel": 72,
-    "fertilizer": "NPK-19-19-19"
-  }
-}
-```
-
-SOIL IQ receives this through the telemetry ingestion layer.
-
----
-
-# 📱 Mobile MQTT Demonstration
-
-A mobile device can act as a **simulated smart sprayer**.
-
-The mobile publishes:
-
-* location
-* speed
-* heading
-* flow
-* tank
-* fertilizer
-* device ID
-* timestamp
-
-via:
-
-**MQTT over WebSockets**
-
-The laptop runs the SOIL IQ dashboard.
-
-Architecture:
-
-```text
-📱 MOBILE
-Simulated Sprayer
-       │
-       │ MQTT
-       ▼
-☁️ MQTT BROKER
-       │
-       ▼
-SOIL IQ MQTT CONSUMER
-       │
-       ▼
-GRID RESOLUTION
-       │
-       ▼
-PRESCRIPTION ENGINE
-       │
-       ▼
-CONTROL ENGINE
-       │
-       ▼
-💻 LAPTOP
-SOIL IQ DASHBOARD
-```
-
----
-
-# 🧪 Simulated Soil Nodes
-
-The hackathon prototype can also simulate distributed soil nodes.
-
-Example:
-
-```text
-NODE-G01
-Moisture = 40%
-pH = 6.4
-
-NODE-G02
-Moisture = 62%
-pH = 6.1
-
-NODE-G03
-Moisture = 78%
-pH = 5.9
-```
-
-These can publish telemetry through MQTT as well.
-
-Example topics:
-
-```text
-soil-iq/demo/soil/G01/telemetry
-soil-iq/demo/soil/G02/telemetry
-soil-iq/demo/soil/G03/telemetry
-```
-
-No physical agricultural hardware is required for the prototype.
-
----
-
-# 🎯 Example Live Scenario
-
-Suppose a field contains:
-
-| Grid | Budget | Consumed | Remaining | Status     |
-| ---- | -----: | -------: | --------: | ---------- |
-| G01  |    100 |       25 |        75 | Optimal    |
-| G02  |    100 |       65 |        35 | Caution    |
-| G03  |    100 |       95 |         5 | Near Limit |
-| G04  |    100 |      100 |         0 | Blocked    |
-
-When the mobile/sprayer enters each grid:
-
-### G01
-
-```text
-Remaining: 75
-Decision: CONTINUE
-```
-
-### G02
-
-```text
-Remaining: 35
-Decision: REDUCE
-Application Rate: 60%
-```
-
-### G03
-
-```text
-Remaining: 5
-Decision: STOP
-```
-
-### G04
-
-```text
-Remaining: 0
-Decision: STOP
-Reason:
-Grid budget exhausted
-```
-
-These are demonstration values and are not universal agronomic limits.
-
----
-
-# 🌧️ Environmental Intelligence
-
-SOIL IQ does not ask only:
-
-> “Is there fertilizer budget remaining?”
-
-It also asks:
-
-> **“Is this an appropriate time to apply?”**
-
-Environmental inputs include:
+SOIL IQ also considers environmental conditions such as:
 
 * rainfall probability
 * expected rainfall
 * soil moisture
 * temperature
 * wind
-* humidity
-* forecast
-* crop stage
+* environmental risk
 
 Example:
 
 ```text
-Nutrient Budget:
-Available
-
 Prescription:
-Active
-
-Rain Probability:
-87%
-
-Expected Rainfall:
-31 mm
-
-Soil Moisture:
-81%
+ALLOW
 
 Environmental Risk:
 HIGH
 
-Final Decision:
+Rain probability:
+87%
+
+Expected rainfall:
+31 mm
+
+Soil moisture:
+81%
+
+FINAL DECISION:
 DEFER
 ```
 
-The system can therefore prevent application based on environmental conditions even when the nutrient budget has not been exhausted.
+This creates an important distinction:
+
+> **“The grid needs fertilizer” does not necessarily mean “apply fertilizer right now.”**
+
+The system can therefore recommend:
+
+**PROCEED → CAUTION → DEFER → BLOCK**
 
 ---
 
-# ⚙️ Control Engine
+# 🧠 8. Explainable Intelligence
 
-The control engine uses deterministic rules.
+SOIL IQ uses intelligence for:
 
-Priority:
-
-```text
-EMERGENCY STOP
-      ↓
-MANUAL OVERRIDE
-      ↓
-INVALID POSITION
-      ↓
-MACHINE FAULT
-      ↓
-ENVIRONMENTAL BLOCK
-      ↓
-NO ACTIVE PRESCRIPTION
-      ↓
-NUTRIENT BUDGET EXCEEDED
-      ↓
-LOW TANK
-      ↓
-RATE CONTROL
-      ↓
-CONTINUE
-```
-
-Possible decisions:
-
-```text
-CONTINUE
-REDUCE
-DEFER
-STOP
-MANUAL_OVERRIDE
-EMERGENCY_STOP
-```
-
-Every decision stores:
-
-* reason
-* evidence
-* timestamp
-* grid
-* sprayer
-* prescription
-* environmental state
-* nutrient state
-
----
-
-# 🧠 AI and Explainability
-
-AI is deliberately **not responsible for safety-critical machine control**.
-
-AI is used for:
-
-* explanations
 * anomaly detection
 * trend analysis
-* scenario interpretation
-* summaries
-* What-If analysis
-* natural-language assistance
+* soil-health trajectory
+* application efficiency
+* scenario comparison
+* recommendations
+* natural-language explanations
+
+The AI layer is deliberately separated from safety-critical control.
+
+### Deterministic systems control:
+
+* nutrient budget
+* grid identification
+* application calculation
+* environmental rules
+* machine control decisions
+
+### AI assists with:
+
+* explanation
+* prediction
+* anomaly interpretation
+* scenario analysis
+* natural-language interaction
+
+This prevents an AI hallucination from becoming a physical machine-control decision.
+
+---
+
+# 🔎 9. Anomaly Detection
+
+SOIL IQ identifies unusual behaviour in:
+
+* soil moisture
+* pH
+* EC
+* nutrient measurements
+* fertilizer application
+* flow rate
+* tank behaviour
+* sensor reporting
+* machine performance
+* environmental conditions
 
 Example:
 
-> **Why did SOIL IQ stop the sprayer?**
+```text
+Normal moisture:
+42–45%
 
-The system can explain:
+Current:
+78%
 
-1. Sprayer entered G047.
-2. G047 had an active prescription.
-3. Remaining application budget was low.
-4. Environmental risk increased.
-5. Heavy rainfall was forecast.
-6. Final control decision became DEFER.
+ANOMALY DETECTED
+```
 
-This explanation is generated from the actual system event chain.
+The system then checks supporting context such as:
 
----
+* rainfall
+* irrigation
+* sensor health
+* recent events
 
-# 🔍 Anomaly Detection
-
-SOIL IQ can detect:
-
-* sudden soil-moisture changes
-* sensor spikes
-* sensor flatlines
-* abnormal application rates
-* unexpected flow behavior
-* machine anomalies
-* repeated over-application
-* environmental anomalies
-
-Supported prototype approaches:
-
-* threshold detection
-* moving averages
-* rate-of-change
-* z-score
-* flatline detection
-* spike detection
+rather than blindly assuming the cause.
 
 ---
 
-# 🔮 What-If Simulation
+# 🌱 10. Soil Health Trajectory
 
-SOIL IQ allows users to compare scenarios.
+Instead of showing only a single score, SOIL IQ tracks change over time.
+
+Example:
+
+```text
+Current Soil Health Index
+78 / 100
+
+Historical:
+78 → 75 → 72
+
+Projected optimized scenario:
+78 → 79 → 81
+```
+
+Projected values are explicitly classified as:
+
+> **PROJECTED / SIMULATED**
+
+They are not presented as proven field outcomes.
+
+---
+
+# 🔬 11. What-If Simulation
+
+SOIL IQ allows farmers/operators to compare possible decisions before applying them.
 
 Example:
 
 ### Baseline
 
-```text
+NPK 19-19-19
 40 kg/ha
 Apply now
-```
 
 ### Scenario
 
-```text
+NPK 19-19-19
 30 kg/ha
 Wait 24 hours
-```
 
-Compare:
+The platform compares:
 
 * fertilizer quantity
 * nutrient contribution
 * budget utilization
-* environmental risk
 * estimated cost
+* environmental risk
+* application efficiency
 * projected soil-health trajectory
-* application outcome
 
-All scenario results are explicitly classified as:
-
-**PROJECTED / SIMULATED**
-
-unless based on actual data.
+This turns SOIL IQ into a **decision-support platform**, not merely a reporting dashboard.
 
 ---
 
-# 🌱 Soil Health Intelligence
+# 📡 12. IoT-Ready Architecture
 
-SOIL IQ can generate a prototype composite soil-health index based on configurable dimensions such as:
+SOIL IQ is designed around hardware abstraction so the same software architecture can eventually support real agricultural devices.
 
-* nutrient balance
-* pH condition
-* EC
-* organic carbon
-* moisture stability
-* fertilizer application history
-* data quality
-
-Example:
-
-```text
-SOIL HEALTH INDEX
-
-78 / 100
-
-Nutrient Balance      82
-pH                    88
-Organic Carbon        64
-EC                    79
-Application History   72
-```
-
-This is a **prototype composite indicator**, not an official scientific soil-health standard.
-
----
-
-# 📈 Impact Measurement
-
-SOIL IQ focuses on measurable outcomes.
-
-### Primary metrics
-
-* fertilizer applied
-* fertilizer avoided
-* application accuracy
-* excess application events prevented
-* estimated cost impact
-* environmental deferrals
-
-### Secondary metrics
-
-* nutrient-use efficiency
-* soil-health trend
-* sensor coverage
-* data quality
-* machine utilization
-
-Every metric is classified as:
-
-### MEASURED
-
-Directly recorded.
-
-### ESTIMATED
-
-Calculated from measured data.
-
-### PROJECTED
-
-Future/model result.
-
-### SIMULATED
-
-Hackathon-generated result.
-
----
-
-# 🧾 Soil Data Management
-
-SOIL IQ supports soil-test records in addition to continuous sensor data.
-
-Users can import:
-
-* CSV
-* soil-test records
-* laboratory measurements
-* historical data
-
-Nutrients may include:
-
-* N
-* P
-* K
-* S
-* Zn
-* Fe
-* Mn
-* B
-
-Data is validated and versioned.
-
-The system maintains:
-
-```text
-Soil Report
-    ↓
-Soil Sample
-    ↓
-Measurement
-    ↓
-Validated Baseline
-    ↓
-Grid State
-    ↓
-Prescription
-```
-
-This gives every major agronomic value a traceable source.
-
----
-
-# 🔐 Data Lineage
-
-For every important value, SOIL IQ can answer:
-
-> **Where did this value come from?**
-
-Example:
-
-```text
-Grid:
-G047
-
-P:
-44 kg/ha
-
-Source:
-Lab Report SR-2026-014
-
-Sample:
-S-047
-
-Collected:
-2026-08-28
-
-Validated:
-2026-08-30
-
-Baseline:
-BL-002 v2
-```
-
----
-
-# 🏢 SaaS Architecture
-
-SOIL IQ is designed as a multi-tenant SaaS platform.
-
-Hierarchy:
-
-```text
-Organization
-    ↓
-Farm
-    ↓
-Field
-    ↓
-Grid
-```
-
-Users are assigned roles.
-
-Supported roles:
-
-* OWNER
-* ADMIN
-* FARM_MANAGER
-* OPERATOR
-* AGRONOMIST
-* VIEWER
-
-Every resource is organization-scoped.
-
----
-
-# 👥 User Workflows
-
-## Farmer / Operator
-
-```text
-Login
-→ View farm
-→ View current grid
-→ See prescription
-→ Monitor sprayer
-→ Receive alert
-→ Add field note
-→ Complete task
-```
-
-## Agronomist
-
-```text
-Login
-→ Review soil data
-→ Validate baseline
-→ Review low-confidence prescription
-→ Approve/reject
-→ Add expert note
-```
-
-## Administrator
-
-```text
-Login
-→ Manage organization
-→ Manage users
-→ Manage devices
-→ Configure policies
-→ Review analytics
-→ Manage pilots
-```
-
----
-
-# 📱 PWA / Mobile Experience
-
-SOIL IQ also supports a mobile-first operator experience.
-
-Mobile features include:
-
-* farm map
-* current grid
-* prescription
-* sensor state
-* machine status
-* alerts
-* tasks
-* field notes
-* photo evidence
-* offline field mode
-
-The mobile application uses the same backend and domain model as the desktop SaaS platform.
-
----
-
-# 📡 Offline Architecture
-
-The platform is designed for agricultural environments where connectivity may be unreliable.
-
-The intended architecture is:
-
-```text
-CLOUD
-   ↕
-EDGE CONTROLLER
-   ↕
-MACHINE / SENSORS
-```
-
-The edge layer can cache:
-
-* active prescription
-* grid map
-* control policy
-* recent environmental state
-
-Telemetry can synchronize after connectivity is restored.
-
-The current prototype simulates this architecture.
-
----
-
-# 🧰 Hardware-Ready Architecture
-
-SOIL IQ is designed so simulation can eventually be replaced with real devices.
-
-### Soil
+### Soil Side
 
 ```text
 Soil Sensors
-↓
+      ↓
 LoRa / LoRaWAN
-↓
+      ↓
 Field Gateway
-↓
+      ↓
 MQTT / HTTPS
-↓
+      ↓
 SOIL IQ
 ```
 
-### Sprayer
+### Machine Side
 
 ```text
 RTK-GNSS
-Flow Meter
+Flow Sensor
 Tank Sensor
-Speed
-↓
+Machine Telemetry
+      ↓
 Edge Controller
-↓
+      ↓
 MQTT / HTTPS
-↓
+      ↓
 SOIL IQ
 ```
 
-### Control
-
-```text
-SOIL IQ Decision Engine
-↓
-Edge Controller
-↓
-Valve / Pump Controller
-```
-
-The current project does not claim certified autonomous machinery control.
+The current prototype uses **simulated devices**, but the architecture is designed for future hardware integration.
 
 ---
 
-# 🧱 System Architecture
+# 🔄 The SOIL IQ Closed Loop
+
+This is the heart of the project.
 
 ```text
-                    SOIL IQ
-                       │
-        ┌──────────────┼──────────────┐
-        │              │              │
-      SOIL           MACHINE      ENVIRONMENT
-        │              │              │
-        ↓              ↓              ↓
- Sensors /         RTK / Flow      Weather /
- Soil Tests        / Tank           Environment
-        │              │              │
-        └──────────────┼──────────────┘
-                       ↓
-                TELEMETRY LAYER
-                       ↓
-                 GRID ENGINE
-                       ↓
-             PRESCRIPTION ENGINE
-                       ↓
-            ENVIRONMENTAL ENGINE
-                       ↓
-                CONTROL ENGINE
-                       ↓
-               APPLICATION EVENTS
-                       ↓
-               NUTRIENT LEDGER
-                       ↓
-               IMPACT ANALYTICS
-                       ↓
-                AI / INSIGHTS
+┌──────────────────────────┐
+│       SOIL DATA          │
+│ Soil Test + Sensors      │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│      GRID ENGINE         │
+│ Spatial Field Model      │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│   PRESCRIPTION ENGINE    │
+│ Nutrient Budget + Crop   │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│     SMART SPRAYER        │
+│ Location + Application   │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│    ACTUAL APPLICATION    │
+│ Flow + Tank + Position   │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│     CONTROL ENGINE       │
+│ Continue/Reduce/Defer/   │
+│ Stop                     │
+└────────────┬─────────────┘
+             ↓
+┌──────────────────────────┐
+│       IMPACT             │
+│ Fertilizer + Cost + Soil │
+└──────────────────────────┘
 ```
 
 ---
 
-# 🛠️ Technology Stack
+# 📈 Measurable Impact
 
-## Frontend
+SOIL IQ is designed around measurable outcomes rather than awareness.
+
+### Primary Metrics
+
+**Fertilizer application avoided**
+
+**Fertilizer-use efficiency**
+
+**Application accuracy**
+
+**Input cost impact**
+
+**Excess application events prevented**
+
+**Environmental defer/block events**
+
+**Soil-health trajectory**
+
+### Important distinction
+
+The prototype clearly separates:
+
+🟢 **Measured** — directly recorded
+🔵 **Estimated** — calculated from available data
+🟣 **Projected** — future/model output
+⚪ **Simulated** — generated for demonstration
+
+This prevents simulated hackathon results from being presented as real-world field evidence.
+
+---
+
+# 🌍 UN SDG Alignment
+
+### SDG 2 — Zero Hunger
+
+Supports more sustainable agricultural production by improving nutrient-use decision making.
+
+### SDG 12 — Responsible Consumption and Production
+
+Reduces unnecessary agricultural input usage through more precise application.
+
+### SDG 13 — Climate Action
+
+Supports environmentally responsible fertilizer timing and management.
+
+### SDG 15 — Life on Land
+
+Supports long-term soil management and responsible nutrient application.
+
+> SOIL IQ is **aligned with these SDGs**; it does not claim to independently achieve them.
+
+---
+
+# ✅ The 5 Mandatory SustainX Questions
+
+## 1. What specific sustainability problem are we addressing?
+
+### **Excessive and inefficient fertilizer application leading to nutrient imbalance, unnecessary input costs, nutrient losses, and potential long-term soil and environmental degradation.**
+
+Traditional fertilizer practices often operate at a field-wide level and may fail to account for spatial differences in soil conditions, crop requirements, application history, and environmental conditions.
+
+SOIL IQ addresses this through **grid-level, context-aware fertilizer management**.
+
+---
+
+## 2. Who is the clearly identified user/community?
+
+### Primary Users
+
+* **Farmers**
+* **Agricultural cooperatives**
+* **Agricultural operators**
+* **Agritech businesses**
+
+### Secondary Users
+
+* Agronomists
+* Agricultural advisors
+* Farm managers
+* Agricultural equipment/service providers
+
+The primary beneficiary is the farmer, who needs to manage fertilizer efficiently while maintaining productive agricultural operations.
+
+---
+
+## 3. What is our measurable sustainability impact?
+
+Our primary measurable metric is:
+
+### **Fertilizer Application Reduction / Avoidance**
+
+We compare:
+
+```text
+Baseline / planned application
+              vs
+SOIL IQ-recommended + verified application
+```
+
+Additional metrics include:
+
+* fertilizer quantity avoided
+* fertilizer cost impact
+* nutrient-use efficiency
+* application accuracy
+* excess-application events prevented
+* environmentally deferred applications
+* sensor/grid coverage
+* long-term soil-health trajectory
+
+For a real deployment, these metrics would be validated through controlled field trials.
+
+---
+
+## 4. What are we improving that doesn't work well enough?
+
+Traditional fertilizer application can rely on:
+
+* generalized recommendations
+* uniform field-wide application
+* historical habits
+* calendar-based timing
+* limited real-time verification
+
+SOIL IQ replaces this with:
+
+```text
+Generic recommendation
+        ↓
+Field-specific grid prescription
+        ↓
+Real-time machine location
+        ↓
+Measured application
+        ↓
+Environmental check
+        ↓
+Dynamic control
+        ↓
+Verified impact
+```
+
+The critical improvement is that SOIL IQ **closes the loop between recommendation and physical application**.
+
+It doesn't merely tell the farmer what to do.
+
+It is designed to verify what actually happened.
+
+---
+
+## 5. What is the realistic path toward real-world use?
+
+SOIL IQ is intentionally designed as a staged deployment system.
+
+### Phase 1 — Software Prototype
+
+* simulated farm
+* virtual grids
+* simulated sensors
+* simulated sprayer
+* prescription engine
+* control engine
+
+### Phase 2 — Controlled Sensor Pilot
+
+Integrate:
+
+* soil sensors
+* environmental sensors
+* field gateway
+
+### Phase 3 — Machine Telemetry
+
+Integrate:
+
+* RTK-GNSS
+* flow sensors
+* tank sensors
+* machine telemetry
+
+### Phase 4 — Controlled Field Validation
+
+Compare:
+
+**conventional management**
+
+vs.
+
+**SOIL IQ-assisted management**
+
+Measure:
+
+* fertilizer usage
+* application accuracy
+* cost
+* soil indicators
+* environmental events
+* crop output
+
+### Phase 5 — Commercial Deployment
+
+Expand toward:
+
+* multiple farms
+* multiple machines
+* agricultural cooperatives
+* agritech service providers
+* large-scale SaaS deployment
+
+Physical deployment would require appropriate **agronomic validation, hardware testing, safety engineering, operator procedures, and regulatory compliance**.
+
+---
+
+# 🧑‍🌾 Why SOIL IQ Is Different
+
+SOIL IQ is not simply:
+
+❌ a fertilizer calculator
+❌ a soil-health dashboard
+❌ a weather application
+❌ an AI agriculture chatbot
+❌ an awareness platform
+
+It combines:
+
+### 🧪 Soil Intelligence
+
+Understanding the condition of the field.
+
+### 🗺️ Spatial Intelligence
+
+Understanding **where** the machine is.
+
+### 📐 Prescription Intelligence
+
+Understanding **what the grid should receive**.
+
+### 🚜 Machine Intelligence
+
+Understanding **what is actually being applied**.
+
+### 🌧️ Environmental Intelligence
+
+Understanding **whether it is appropriate to apply now**.
+
+### 🔄 Closed-Loop Control
+
+Turning those insights into:
+
+**CONTINUE → REDUCE → DEFER → STOP**
+
+### 📊 Impact Intelligence
+
+Measuring what changed.
+
+---
+
+# 🏗️ Technology Stack
+
+### Frontend
 
 * Next.js
 * TypeScript
 * React
 * Tailwind CSS
 * shadcn/ui
-* Mapbox GL JS
-* Recharts
+* Mapbox
 
-## Backend
+### Backend
 
-* Next.js server-side APIs
-* Server Actions
+* Next.js API / Server Actions
+* TypeScript
 * Domain/service architecture
-* Zod validation
 
-## Database
+### Database
 
 * PostgreSQL
 * Prisma ORM
 
-## Authentication
+### Data & Validation
 
-* Auth.js
+* Zod
+* typed domain contracts
 
-## IoT
+### IoT Architecture
 
-* MQTT
-* MQTT over WebSockets
+* MQTT-ready telemetry layer
 * LoRa/LoRaWAN-ready architecture
-* Device abstraction layer
-* Telemetry ingestion
+* device abstraction
+* edge-controller abstraction
+* sensor simulation
 
-## Realtime
+### Intelligence
 
-* Event-driven architecture
-* WebSocket-compatible realtime layer
-
-## Simulation
-
-* Soil sensor simulator
-* Weather simulator
-* Smart sprayer simulator
-* RTK simulation
-* Flow-meter simulation
-* Tank simulation
-
-## Intelligence
-
-* deterministic rule engine
-* statistical prediction
+* deterministic agronomic rule engine
 * anomaly detection
-* optional LLM explanation provider
-
----
-
-# 📁 Project Structure
-
-A typical SOIL IQ structure:
-
-```text
-soil-iq/
-│
-├── app/
-│   ├── dashboard/
-│   ├── farms/
-│   ├── fields/
-│   ├── grids/
-│   ├── prescriptions/
-│   ├── monitoring/
-│   ├── sprayers/
-│   ├── sensors/
-│   ├── analytics/
-│   ├── alerts/
-│   ├── simulations/
-│   ├── pilots/
-│   ├── validation/
-│   ├── settings/
-│   ├── judge/
-│   └── api/
-│
-├── components/
-│   ├── ui/
-│   ├── maps/
-│   ├── charts/
-│   ├── grid/
-│   ├── sprayer/
-│   ├── sensors/
-│   ├── alerts/
-│   └── dashboard/
-│
-├── services/
-│   ├── farmService
-│   ├── fieldService
-│   ├── gridService
-│   ├── prescriptionService
-│   ├── nutrientBudgetService
-│   ├── telemetryService
-│   ├── sprayerService
-│   ├── environmentalDecisionService
-│   ├── controlService
-│   ├── impactService
-│   └── intelligenceService
-│
-├── domain/
-│   ├── grid/
-│   ├── prescription/
-│   ├── nutrients/
-│   ├── sensors/
-│   ├── sprayer/
-│   ├── environment/
-│   └── intelligence/
-│
-├── lib/
-│   ├── auth/
-│   ├── mqtt/
-│   ├── map/
-│   ├── validation/
-│   └── utils/
-│
-├── prisma/
-│   ├── schema.prisma
-│   ├── migrations/
-│   └── seed.ts
-│
-├── public/
-│
-├── tests/
-│
-├── .env.example
-├── ARCHITECTURE.md
-├── SECURITY.md
-├── DATA_MODEL.md
-├── AGRO_DATA.md
-├── package.json
-└── README.md
-```
-
-The exact structure may vary depending on implementation.
-
----
-
-# ⚙️ Getting Started
-
-## Prerequisites
-
-Install:
-
-* Node.js 20+
-* npm / pnpm / yarn
-* PostgreSQL
-* Git
-
-Optional:
-
-* MQTT broker
-* Mapbox account
-* LLM provider API key
-* Weather API key
-
----
-
-# 📥 Clone the Repository
-
-```bash
-git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY.git
-cd soil-iq
-```
-
-Install dependencies:
-
-```bash
-npm install
-```
-
-or:
-
-```bash
-pnpm install
-```
-
----
-
-# 🔐 Environment Variables
-
-Create:
-
-```text
-.env.local
-```
-
-Example:
-
-```env
-# Database
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/soil_iq"
-
-# Authentication
-AUTH_SECRET="replace-with-a-secure-secret"
-AUTH_URL="http://localhost:3000"
-
-# Mapbox
-NEXT_PUBLIC_MAPBOX_TOKEN="your-mapbox-token"
-
-# MQTT
-MQTT_BROKER_URL="wss://your-broker-url"
-MQTT_USERNAME="your-mqtt-username"
-MQTT_PASSWORD="your-mqtt-password"
-
-# Optional LLM
-LLM_API_KEY=""
-
-# Optional weather provider
-WEATHER_API_KEY=""
-
-# Application
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-NODE_ENV="development"
-```
-
-Never commit:
-
-```text
-.env
-.env.local
-.env.production
-```
-
-to GitHub.
-
-Use `.env.example` instead.
-
----
-
-# 🗄️ Database Setup
-
-Run Prisma generation:
-
-```bash
-npx prisma generate
-```
-
-Run migrations:
-
-```bash
-npx prisma migrate dev
-```
-
-Seed development/demo data:
-
-```bash
-npm run db:seed
-```
-
-or:
-
-```bash
-npx prisma db seed
-```
-
-Inspect the database:
-
-```bash
-npx prisma studio
-```
-
----
-
-# ▶️ Running Locally
-
-Start the application:
-
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
----
-
-# 🧪 Demo Mode
-
-SOIL IQ contains a deterministic demonstration environment.
-
-Demo mode can simulate:
-
-* farms
-* grids
-* soil nodes
-* sensor telemetry
-* sprayer movement
-* RTK position
-* fertilizer flow
-* tank level
-* environmental events
-* control decisions
-* alerts
-* impact calculations
-
-Use:
-
-```text
-/judge
-```
-
-or the application's dedicated demo entry point.
-
----
-
-# 🚜 Recommended Demo Scenario
-
-Start with:
-
-```text
-Green Valley Farm
-10 acres
-5 fields
-```
-
-Configure several grids:
-
-```text
-G01 → Optimal
-G02 → Caution
-G03 → Near Limit
-G04 → Blocked
-```
-
-Start the smart sprayer simulation.
-
-The machine should:
-
-```text
-G01
-↓
-CONTINUE
-
-G02
-↓
-REDUCE
-
-G03
-↓
-STOP
-
-G04
-↓
-BLOCKED
-```
-
-Then trigger a weather event:
-
-```text
-Heavy rain forecast
-+
-high soil moisture
-↓
-Environmental risk HIGH
-↓
-DEFER
-```
-
-Finally open:
-
-* alert
-* control explanation
+* statistical trend analysis
+* explainable intelligence
+* optional LLM provider
+
+### Analytics
+
+* Recharts
+* spatial grid visualization
+* real-time operational dashboards
 * impact analytics
-* What-If simulator
 
 ---
 
-# 📱 MQTT Mobile Demo
-
-For the hackathon, a mobile phone can simulate the smart sprayer.
-
-Open the SOIL IQ mobile simulator on a phone.
-
-The mobile publishes MQTT telemetry such as:
-
-```json
-{
-  "deviceId": "SPRAYER-01",
-  "latitude": 17.12345,
-  "longitude": 80.54321,
-  "speed": 4.2,
-  "heading": 90,
-  "flowRate": 12.5,
-  "tankLevel": 72
-}
-```
-
-MQTT sends this through the broker.
-
-SOIL IQ then:
+# 🧠 Core Architecture
 
 ```text
-MQTT
-↓
-Telemetry Ingestion
-↓
-Grid Resolution
-↓
-Prescription Lookup
-↓
-Control Engine
-↓
-Laptop Dashboard
-```
-
-This demonstrates location tracking and real-time communication without requiring physical agricultural machinery.
-
----
-
-# 📡 MQTT Topics
-
-Example:
-
-### Sprayer telemetry
-
-```text
-soil-iq/demo/sprayer/SPRAYER-01/telemetry
-```
-
-### Sprayer status
-
-```text
-soil-iq/demo/sprayer/SPRAYER-01/status
-```
-
-### Sprayer commands
-
-```text
-soil-iq/demo/sprayer/SPRAYER-01/command
-```
-
-### Soil telemetry
-
-```text
-soil-iq/demo/soil/G047/telemetry
-```
-
-### Acknowledgements
-
-```text
-soil-iq/demo/sprayer/SPRAYER-01/ack
-```
-
-Actual topic conventions may vary by deployment.
-
----
-
-# 📍 Mobile Location Simulation
-
-Two modes are supported conceptually.
-
-## Simulated Route
-
-The phone follows a predefined virtual route:
-
-```text
-G01
- ↓
-G02
- ↓
-G03
- ↓
-G04
-```
-
-This is the recommended hackathon mode because it is deterministic.
-
-## Real Phone GPS
-
-The phone can optionally use browser/device location.
-
-The location is converted into:
-
-```text
-latitude
-longitude
-↓
-field
-↓
-grid
-```
-
-Real GPS accuracy may vary, so this mode should be considered optional for demonstrations.
-
----
-
-# 🔌 Hardware Integration
-
-SOIL IQ is hardware-ready but the hackathon implementation is primarily simulated.
-
-Potential future integration:
-
-## Soil Sensors
-
-```text
-Sensor
-↓
-LoRa/LoRaWAN
-↓
-Gateway
-↓
-MQTT
-↓
-SOIL IQ
-```
-
-## Sprayer
-
-```text
-RTK-GNSS
-+
-Flow Meter
-+
-Tank Sensor
-+
-Speed
-↓
-Edge Controller
-↓
-MQTT
-↓
-SOIL IQ
-```
-
-## Control
-
-```text
-SOIL IQ
-↓
-Edge Control Decision
-↓
-Valve / Pump Controller
+                 SOIL IQ
+                    │
+        ┌───────────┴───────────┐
+        │                       │
+   SOIL LAYER              MACHINE LAYER
+        │                       │
+  Soil Tests                 RTK-GNSS
+  Soil Sensors               Flow Sensor
+  Environment                Tank Sensor
+        │                       │
+        └───────────┬───────────┘
+                    ↓
+             TELEMETRY LAYER
+                    ↓
+              GRID ENGINE
+                    ↓
+          PRESCRIPTION ENGINE
+                    ↓
+         ENVIRONMENTAL ENGINE
+                    ↓
+             CONTROL ENGINE
+                    ↓
+          APPLICATION HISTORY
+                    ↓
+          INTELLIGENCE ENGINE
+                    ↓
+             IMPACT ENGINE
+                    ↓
+          SOIL IQ DASHBOARD
 ```
 
 ---
 
-# 🧠 Why Edge Computing?
+# 🔐 Trust, Safety & Scientific Integrity
 
-Critical physical control should not depend entirely on the cloud.
+SOIL IQ is designed around a simple principle:
 
-The intended production architecture is:
-
-```text
-Cloud
-  ↕
-Edge Controller
-  ↕
-Machine
-```
-
-The edge controller can cache:
-
-* active prescriptions
-* field/grid map
-* control policy
-* recent environmental state
-
-The cloud handles:
-
-* analytics
-* storage
-* historical data
-* reporting
-* user management
-* model updates
-
-The current project simulates this architecture.
-
----
-
-# 🧪 Testing
-
-Run lint:
-
-```bash
-npm run lint
-```
-
-Run type checking:
-
-```bash
-npm run typecheck
-```
-
-Run unit tests:
-
-```bash
-npm test
-```
-
-Run production build:
-
-```bash
-npm run build
-```
-
-If available:
-
-```bash
-npm run test:e2e
-```
-
----
-
-# ✅ Recommended Test Scenarios
-
-The system should be tested against:
-
-### Normal application
-
-```text
-Prescription active
-+
-Budget available
-+
-Environment safe
-→ CONTINUE
-```
-
-### Near threshold
-
-```text
-Budget approaching maximum
-→ REDUCE
-```
-
-### Budget exhausted
-
-```text
-Remaining budget = 0
-→ STOP
-```
-
-### Heavy rain
-
-```text
-High rainfall risk
-→ DEFER
-```
-
-### No prescription
-
-```text
-No active prescription
-→ STOP
-```
-
-### Invalid GPS
-
-```text
-Position unavailable
-→ SAFE STOP
-```
-
-### Tank empty
-
-```text
-Tank = 0
-→ STOP
-```
-
-### Emergency stop
-
-```text
-Emergency stop
-→ machine state STOPPED
-```
-
-### Realtime failure
-
-```text
-MQTT/realtime disconnected
-→ show degraded/offline state
-```
-
----
-
-# 🔒 Security
-
-SOIL IQ implements a multi-tenant architecture.
-
-Each organization's resources are isolated.
-
-Protected resources include:
-
-* farms
-* fields
-* grids
-* sensors
-* sprayers
-* telemetry
-* prescriptions
-* alerts
-* analytics
-* pilots
-* reports
-
-Server-side authorization is required.
-
-Device communication is designed around device identity and authenticated telemetry.
-
-Physical machine control is protected behind explicit safety gates.
-
----
-
-# ⚠️ Important Scientific Guardrails
-
-SOIL IQ intentionally separates:
-
-### Measured
-
-Direct sensor/device/lab data.
-
-### Estimated
-
-Values calculated from available data.
-
-### Projected
-
-Future/model-based outputs.
-
-### Simulated
-
-Hackathon demonstration data.
-
-This distinction is critical.
-
-SOIL IQ does **not** claim that:
-
-* a universal fertilizer safe limit exists
-* every soil sensor can directly measure all nutrients
-* AI can replace agronomists
-* fertilizer reduction automatically increases yield
-* simulated savings represent field-tested results
-* the prototype is certified autonomous agricultural machinery
-
-Actual deployment requires:
-
-* agronomic validation
-* field testing
-* hardware testing
-* safety engineering
-* regulatory compliance
-* operator training
-
----
-
-# 🌾 Real-World Validation Roadmap
-
-## Phase 1 — Software Prototype
-
-Current stage:
-
-```text
-Simulated soil nodes
-+
-simulated sprayer
-+
-MQTT
-+
-grid engine
-+
-control engine
-```
-
-## Phase 2 — Hardware Bench Test
-
-Connect:
-
-* real sensor
-* real flow meter
-* real RTK device
-* edge controller
-
-without controlling a real agricultural machine.
-
-## Phase 3 — Controlled Field Pilot
-
-Compare:
-
-```text
-Control Area
-vs
-SOIL IQ Area
-```
-
-Measure:
-
-* fertilizer use
-* application accuracy
-* input cost
-* nutrient balance
-* soil indicators
-* crop output
-* environmental events
-
-## Phase 4 — Machine Integration
-
-Integrate with compatible agricultural equipment.
-
-## Phase 5 — Multi-Farm SaaS
-
-Scale to:
-
-* multiple organizations
-* farms
-* devices
-* machines
-* crops
-* regions
-
----
-
-# 🌍 Sustainability Alignment
-
-## SDG 2 — Zero Hunger
-
-Supports more sustainable and efficient agricultural production.
-
-## SDG 12 — Responsible Consumption and Production
-
-Targets unnecessary agricultural input use and improves application efficiency.
-
-## SDG 13 — Climate Action
-
-Supports environmentally conscious fertilizer timing and application management.
-
-## SDG 15 — Life on Land
-
-Supports long-term soil and land management.
-
-SOIL IQ does not claim to single-handedly achieve these SDGs.
-
-It provides a technology platform aligned with relevant sustainability objectives.
-
----
-
-# 🏆 Why SOIL IQ?
-
-Traditional:
-
-```text
-General Recommendation
-        ↓
-Uniform Application
-        ↓
-Limited Verification
-```
-
-SOIL IQ:
-
-```text
-SOIL DATA
-   ↓
-GRID
-   ↓
-FIELD-SPECIFIC PRESCRIPTION
-   ↓
-MACHINE LOCATION
-   ↓
-ACTUAL APPLICATION
-   ↓
-ENVIRONMENT
-   ↓
-CONTROL
-   ↓
-IMPACT
-```
-
-### The product differentiation is the closed loop.
-
-> **SOIL IQ doesn't just recommend fertilizer. It connects the recommendation to the machine and verifies what actually happens in the field.**
-
----
-
-# 🔮 Future Roadmap
-
-Potential future enhancements:
-
-* real LoRaWAN deployments
-* agricultural machinery integrations
-* RTK hardware
-* real flow meters
-* real-time fertilizer control
-* satellite imagery
-* drone imagery
-* advanced spatial interpolation
-* crop-health monitoring
-* yield forecasting
-* advanced machine learning
-* multi-season soil models
-* regional agronomic models
-* government/agriculture data integrations
-* commercial APIs
-
-All future agronomic models should undergo appropriate validation.
-
----
-
-# 🚧 Current Limitations
-
-The hackathon prototype currently relies heavily on:
-
-* simulated sensor data
-* simulated machine telemetry
-* prototype agronomic rules
-* simulated environmental scenarios
-* configurable demo fertilizer values
+> **The system must never pretend to know something it does not actually know.**
 
 Therefore:
 
-**SOIL IQ should be considered a technology prototype and decision-support architecture, not a validated agricultural prescription system.**
+* soil-test data is distinguished from sensor data
+* measured values are distinguished from estimates
+* projections are distinguished from real outcomes
+* simulated results are clearly labelled
+* prescriptions are explainable
+* control decisions are deterministic
+* AI cannot directly override safety-critical machine control
+* historical decisions are auditable
+* every major recommendation has a traceable data source
 
-Field deployment should only occur after proper agronomic, hardware, safety, and regulatory validation.
+### SOIL IQ does not claim to:
 
----
+* replace laboratory soil testing
+* guarantee crop yield
+* establish universal fertilizer limits
+* guarantee fertilizer savings
+* replace qualified agronomic expertise
+* certify autonomous agricultural machinery
 
-# 📌 Demo Architecture
-
-For the SustainX hackathon:
-
-```text
-📱 MOBILE
-Smart Sprayer Simulator
-        │
-        │ MQTT
-        ▼
-☁️ MQTT BROKER
-        │
-        ▼
-🧠 SOIL IQ BACKEND
-        │
-        ├── Grid Engine
-        ├── Prescription Engine
-        ├── Nutrient Ledger
-        ├── Environmental Engine
-        ├── Control Engine
-        └── Intelligence
-        │
-        ▼
-💻 LAPTOP
-SOIL IQ SaaS Dashboard
-```
-
-Optional simulated soil nodes:
-
-```text
-Virtual Soil Nodes
-      ↓
-     MQTT
-      ↓
-SOIL IQ
-```
-
-No physical agricultural hardware is required to demonstrate the core architecture.
+The prototype demonstrates the **technology architecture and decision loop**. Real-world performance must be validated through controlled field trials.
 
 ---
 
-# 🎤 Hackathon Demo Story
+# 🚀 Current Prototype Status
 
-### Step 1
+### Implemented / Prototyped
 
+✅ Multi-tenant SaaS architecture
+✅ Farm and field management
+✅ Spatial grid generation
+✅ Grid-level nutrient budgets
+✅ Soil data architecture
+✅ Fertilizer formulation model
+✅ Prescription engine
+✅ Explainable recommendations
+✅ Sensor simulation
+✅ Telemetry architecture
+✅ Smart sprayer simulation
+✅ Grid-aware application tracking
+✅ Variable-rate application logic
+✅ Environmental risk engine
+✅ Weather-aware defer/block logic
+✅ Anomaly detection
+✅ Soil-health trajectory
+✅ What-If simulation
+✅ Impact analytics
+✅ Alerts and audit trails
+✅ Hardware-ready architecture
+✅ PWA/mobile field experience
+✅ Soil-test import and validation architecture
+✅ Judge/demo mode
 
-Show the virtual farm.
+### Current limitation
 
-> “We divided this farm into spatial intelligence grids.”
+The current hackathon implementation uses **simulated sensors, simulated machine telemetry, and prototype agronomic parameters**.
 
-### Step 2
-
-Select a grid.
-
-> “Every grid has its own soil state and nutrient budget.”
-
-### Step 3
-
-Show prescription.
-
-> “SOIL IQ generates a field-specific application recommendation.”
-
-### Step 4
-
-Open mobile.
-
-> “This phone is our simulated smart sprayer, publishing its location and application telemetry through MQTT.”
-
-### Step 5
-
-Start movement.
-
-The laptop receives:
-
-```text
-SPRAYER-01
-→ G01
-```
-
-### Step 6
-
-Move to another grid.
-
-```text
-G02
-→ REDUCE
-```
-
-### Step 7
-
-Move to a saturated grid.
-
-```text
-G03
-→ STOP
-```
-
-### Step 8
-
-Trigger rainfall.
-
-```text
-Environmental Risk:
-HIGH
-
-Decision:
-DEFER
-```
-
-### Step 9
-
-Show impact.
-
-> “Now we can quantify what was actually applied, where it was applied, and how much unnecessary application was prevented in the simulation.”
+The next stage is controlled field validation with real soil-test data, sensor hardware, machine telemetry, and qualified agronomic oversight.
 
 ---
 
-# 🧩 Project Philosophy
+# 🏆 The SOIL IQ Vision
 
-SOIL IQ is built around five principles:
+Agriculture does not need another dashboard that tells farmers:
 
-### 1. Spatial
+> “Your soil needs attention.”
 
-Every decision is tied to a location.
+It needs systems that can connect:
 
-### 2. Measurable
+**what the soil needs**
 
-Actual application is tracked.
+with
 
-### 3. Explainable
+**what the machine applies**
 
-Every major decision has a reason.
+and
 
-### 4. Safe
+**what the environment allows.**
 
-Uncertainty should lead to conservative system behavior.
+SOIL IQ is built around that connection.
 
-### 5. Validatable
+### **Sense. Prescribe. Apply. Verify. Optimize.**
 
-The system distinguishes prototype assumptions from measured reality.
-
----
-
-# 👥 Team
-
-**Project:** SOIL IQ
-
-**Hackathon:** SustainX
-
-**Focus:** Sustainable Agriculture / Precision Fertilizer Management
-
-Team members:
-
-* Member 1 — Nabiha Tabassum
-* Member 2 — Rajdeep Dutta
-
----
-
-# 📄 License
-
-Choose and add the appropriate license before public deployment.
-
-For example:
-
-```text
-MIT License
-```
-
-See `LICENSE` for details.
-
----
-
-# ⭐ Final Statement
-
-> **SOIL IQ: Every grid gets a prescription. Every application gets measured. Every decision gets explained.**
-
-Built as a technology prototype for sustainable, precision-driven fertilizer management.
-
-````
-
+> ## **SOIL IQ**
+>
+> ### **Every grid gets a prescription. Every application gets measured. Every decision gets explained.**
